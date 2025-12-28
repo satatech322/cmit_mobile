@@ -35,7 +35,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
     final findingsList = (widget.visit['findings'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
 
-    // Build combined findings text
+    // Build combined findings text from all visits
     String combinedFindings = '';
     for (int i = 0; i < findingsList.length; i++) {
       final finding = findingsList[i];
@@ -46,7 +46,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
       combinedFindings += 'Finding #${i + 1} - $user\n$findingsText';
     }
 
-    // Initialize QuillController with plain text (since we're only sending plain text to backend)
+    // Initialize QuillController with plain text
     _quillController = quill.QuillController.basic();
     if (combinedFindings.isNotEmpty) {
       _quillController.document.insert(0, combinedFindings);
@@ -68,7 +68,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Get plain text from Quill editor (this is what your API expects)
+      // Get plain text from Quill editor
       final String combinedFindings = _quillController.document.toPlainText().trim();
 
       if (combinedFindings.isEmpty) {
@@ -96,7 +96,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
       if (response['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Finding finalized successfully'),
+            content: Text(response['message'] ?? 'All findings finalized successfully'),
             backgroundColor: const Color(0xFF014323),
           ),
         );
@@ -104,7 +104,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Failed to finalize finding'),
+            content: Text(response['message'] ?? 'Failed to finalize findings'),
             backgroundColor: Colors.red,
           ),
         );
@@ -128,6 +128,8 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final findingsList = (widget.visit['findings'] as List<dynamic>? ?? []);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       resizeToAvoidBottomInset: true,
@@ -136,7 +138,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
         elevation: 0,
         leading: const BackButton(color: Color(0xFF1A1A1A)),
         title: const Text(
-          'Finalize Finding',
+          'Finalize All Findings',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: Color(0xFF1A1A1A),
@@ -158,7 +160,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildVisitInfo(),
+                    _buildSummaryInfo(findingsList.length),
                     const SizedBox(height: 12),
                     _buildQuillEditor(),
                   ],
@@ -172,11 +174,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
     );
   }
 
-  Widget _buildVisitInfo() {
-    final String dateStr = (widget.visit['visit_date'] ?? '').toString();
-    final String formattedDate = _formatVisitDate(dateStr);
-    final String visitTime = (widget.visit['visit_time'] ?? '').toString();
-
+  Widget _buildSummaryInfo(int totalFindings) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       decoration: BoxDecoration(
@@ -204,7 +202,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.calendar_today,
+                  Icons.assessment,
                   size: 18,
                   color: Color(0xFF014323),
                 ),
@@ -213,47 +211,47 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    formattedDate,
-                    style: const TextStyle(
+                  const Text(
+                    'Combined Findings Summary',
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                       color: Color(0xFF1A1A1A),
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, size: 13, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        visitTime,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Total Findings: $totalFindings',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FA),
+              color: const Color(0xFFFFF9E6),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
+              border: Border.all(color: const Color(0xFFFFE082)),
             ),
-            child: Column(
+            child: Row(
               children: [
-                _infoRow('Officer', (widget.visit['officer'] ?? 'N/A').toString()),
-                const SizedBox(height: 8),
-                _infoRow('Driver', (widget.visit['driver'] ?? 'N/A').toString()),
-                const SizedBox(height: 8),
-                _infoRow('Vehicle', (widget.visit['vehicle'] ?? 'N/A').toString()),
+                const Icon(Icons.info_outline, size: 16, color: Color(0xFFF57C00)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This will finalize all findings from all field visits into a single document.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -290,7 +288,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
                 const Icon(Icons.edit_document, size: 20, color: Color(0xFF014323)),
                 const SizedBox(width: 8),
                 const Text(
-                  'Edit Finalized Finding',
+                  'Edit Combined Findings',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -324,7 +322,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
           quill.QuillEditor.basic(
             configurations: quill.QuillEditorConfigurations(
               controller: _quillController,
-              placeholder: 'Edit findings here...',
+              placeholder: 'Edit all findings here...',
               padding: const EdgeInsets.all(16),
               autoFocus: false,
               expands: false,
@@ -393,7 +391,7 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
                 )
                     : const Icon(Icons.check_circle, size: 20),
                 label: Text(
-                  _isLoading ? 'Finalizing...' : 'Finalize Finding',
+                  _isLoading ? 'Finalizing...' : 'Finalize All Findings',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -415,42 +413,5 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
         ),
       ),
     );
-  }
-
-  Widget _infoRow(String label, String value) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 70,
-          child: Text(
-            '$label:',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value.isNotEmpty ? value : 'N/A',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatVisitDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr.split(' ').first);
-      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-    } catch (e) {
-      return 'Invalid Date';
-    }
   }
 }

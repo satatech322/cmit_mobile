@@ -8,7 +8,6 @@ class InquiryVisitsSection extends StatefulWidget {
   final List<dynamic> visits;
   final Function(Map<String, dynamic>) onNavigateToFindings;
   final Function(Map<String, dynamic>, Map<String, dynamic>, int) onEditFinding;
-  final Function(Map<String, dynamic>) onNavigateToFinalizeFinding;
   final VoidCallback onAddVisit;
 
   const InquiryVisitsSection({
@@ -17,7 +16,6 @@ class InquiryVisitsSection extends StatefulWidget {
     required this.visits,
     required this.onNavigateToFindings,
     required this.onEditFinding,
-    required this.onNavigateToFinalizeFinding,
     required this.onAddVisit,
   });
 
@@ -41,7 +39,6 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
     // Check permissions
     final bool canAddVisit = InquiryPermissions.canAddFieldVisit(widget.inquiry);
     final bool canEditFinding = InquiryPermissions.canEditFinding(widget.inquiry);
-    final bool canFinalizeFindings = InquiryPermissions.canFinalizeFindings(widget.inquiry);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -57,7 +54,6 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
                 visit,
                 visitNumber,
                 canEditFinding: canEditFinding,
-                canFinalizeFindings: canFinalizeFindings,
               );
             }).toList(),
 
@@ -89,7 +85,6 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
       Map<String, dynamic> visit,
       int visitNumber, {
         required bool canEditFinding,
-        required bool canFinalizeFindings,
       }) {
     final findingsList = (visit['findings'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
@@ -202,34 +197,12 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Findings (${findingsList.length})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const Spacer(),
-                        // Finalize button - Only show to chairperson
-                        if (canFinalizeFindings)
-                          ElevatedButton.icon(
-                            onPressed: () => widget.onNavigateToFinalizeFinding(visit),
-                            icon: const Icon(Icons.check_circle, size: 16),
-                            label: const Text('Finalize'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF014323),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                          ),
-                      ],
+                    Text(
+                      'Findings (${findingsList.length})',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ...findingsList.asMap().entries.map((entry) {

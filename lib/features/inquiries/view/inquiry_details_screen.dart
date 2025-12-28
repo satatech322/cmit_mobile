@@ -113,18 +113,52 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
     );
   }
 
-  void _navigateToFinalizeFinding(Map<String, dynamic> visit) {
+  void _navigateToFinalizeAllFindings() {
     // Check permission
     if (!InquiryPermissions.canFinalizeFindings(i)) {
       _showPermissionError('Only chairperson can finalize findings');
       return;
     }
 
+    // Collect all findings from all visits
+    List<Map<String, dynamic>> allFindings = [];
+
+    for (var visit in allVisits) {
+      final visitMap = visit as Map<String, dynamic>;
+      final findingsList = (visitMap['findings'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
+
+      if (findingsList.isNotEmpty) {
+        allFindings.addAll(findingsList);
+      }
+    }
+
+    if (allFindings.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No findings available to finalize'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Create a combined visit object with all findings
+    Map<String, dynamic> combinedVisit = {
+      'id': allVisits.first['id'], // Use first visit's ID
+      'visit_date': 'All Visits',
+      'visit_time': '',
+      'officer': 'Multiple Officers',
+      'driver': 'Multiple Drivers',
+      'vehicle': 'Multiple Vehicles',
+      'findings': allFindings,
+    };
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => FinalizedFindingScreen(
-          visit: visit,
+          visit: combinedVisit,
           inquiryId: i.id.toString(),
         ),
       ),
@@ -192,9 +226,22 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
     );
   }
 
+  // Get total number of findings across all visits
+  int _getTotalFindings() {
+    int total = 0;
+    for (var visit in allVisits) {
+      final visitMap = visit as Map<String, dynamic>;
+      final findingsList = (visitMap['findings'] as List<dynamic>? ?? []);
+      total += findingsList.length;
+    }
+    return total;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isChairperson = i.isChairperson;
+    final canFinalizeFindings = InquiryPermissions.canFinalizeFindings(i);
+    final totalFindings = _getTotalFindings();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -273,10 +320,32 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
                 visits: allVisits,
                 onNavigateToFindings: _navigateToFindings,
                 onEditFinding: _editFinding,
-                onNavigateToFinalizeFinding: _navigateToFinalizeFinding,
                 onAddVisit: _addVisit,
               ),
             ),
+
+            // Centralized Finalize All Findings Button
+            if (canFinalizeFindings && totalFindings > 0)
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _navigateToFinalizeAllFindings,
+                  icon: const Icon(Icons.check_circle_outline, size: 20),
+                  label: Text('Finalize All Findings ($totalFindings)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF014323),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 8),
 
             // Annex Section
             _buildCollapsibleSection(
