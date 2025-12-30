@@ -1,5 +1,5 @@
-// lib/features/offline/services/offline_sync_service.dart
-// UPDATED: Removed all visit sync functionality - only findings remain
+import 'dart:io';
+import 'dart:convert';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/core/finding_inquiry_service.dart';
 
@@ -81,16 +81,61 @@ class OfflineSyncService {
             continue;
           }
 
+          // Process images if any
+          List<String> networksFiles = [];
+          if (finding['images'] != null) {
+            final List<dynamic> imagePaths = finding['images'] as List<dynamic>;
+            for (var path in imagePaths) {
+              try {
+                final file = File(path.toString());
+                if (await file.exists()) {
+                  final bytes = await file.readAsBytes();
+                  final base64String = base64Encode(bytes);
+
+                  // Determine mime type
+                  final extension = path.toString().split('.').last.toLowerCase();
+                  String mimeType = 'image/jpeg';
+                  if (extension == 'png') {
+                    mimeType = 'image/png';
+                  } else if (extension == 'gif') {
+                    mimeType = 'image/gif';
+                  }
+
+                  networksFiles.add('data:$mimeType;base64,$base64String');
+                }
+              } catch (e) {
+                print('Error processing offline image $path: $e');
+              }
+            }
+          }
+
           // Call API to store finding
           final result = await FindingInquiryService.storeFinding(
             findings: finding['findings'],
             visitId: serverVisitId,
+            files: networksFiles.isNotEmpty ? networksFiles : null,
           );
 
           if (result['success'] == true) {
             // Mark as synced and delete
             await OfflineService.markFindingSynced(offlineFindingId);
             await OfflineService.deleteSyncedFinding(offlineFindingId);
+
+            // Clean up local image files
+            if (finding['images'] != null) {
+              final List<dynamic> imagePaths = finding['images'] as List<dynamic>;
+              for (var path in imagePaths) {
+                try {
+                  final file = File(path.toString());
+                  if (await file.exists()) {
+                    await file.delete();
+                  }
+                } catch (e) {
+                  print('Error wiping offline image $path: $e');
+                }
+              }
+            }
+
             successCount++;
           } else {
             failCount++;

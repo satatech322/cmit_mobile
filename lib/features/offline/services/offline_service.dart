@@ -1,8 +1,10 @@
 // lib/features/offline/services/offline_service.dart
 // UPDATED: Removed all visit offline functionality - only findings remain
 import 'dart:convert';
+import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:path_provider/path_provider.dart';
 
 class OfflineService {
   static const String _keyOfflineFindings = 'offline_findings';
@@ -27,9 +29,36 @@ class OfflineService {
     required int inquiryId,
     required String visitId,
     required String findings,
+    List<String>? images,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // Get persistent directory
+      final directory = await getApplicationDocumentsDirectory();
+      final offlineDir = Directory('${directory.path}/offline_images');
+      if (!await offlineDir.exists()) {
+        await offlineDir.create(recursive: true);
+      }
+
+      List<String> persistentImagePaths = [];
+
+      // Process and move images to persistent storage
+      if (images != null) {
+        for (String sourcePath in images) {
+          try {
+            final sourceFile = File(sourcePath);
+            if (await sourceFile.exists()) {
+              final fileName = sourcePath.split(Platform.pathSeparator).last;
+              final newPath = '${offlineDir.path}/$fileName';
+              await sourceFile.copy(newPath);
+              persistentImagePaths.add(newPath);
+            }
+          } catch (e) {
+            print('Error copying image: $e');
+          }
+        }
+      }
 
       // Get existing offline findings
       final existingData = prefs.getString(_keyOfflineFindings);
@@ -47,6 +76,7 @@ class OfflineService {
         'inquiry_id': inquiryId,
         'visit_id': visitId,
         'findings': findings,
+        'images': persistentImagePaths, // Store PERSISTENT paths
         'timestamp': DateTime.now().toIso8601String(),
         'synced': false,
       };

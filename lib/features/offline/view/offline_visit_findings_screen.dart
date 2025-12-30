@@ -1,6 +1,9 @@
 // lib/features/offline/view/offline_visit_findings_screen.dart - WITH OFFLINE SUPPORT
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:image_picker/image_picker.dart';
 import 'package:cmit/core/finding_inquiry_service.dart';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/widgets/offline_indicator.dart';
@@ -22,6 +25,8 @@ class OfflineVisitFindingsScreen extends StatefulWidget {
 class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen> {
   late quill.QuillController _controller;
   final FocusNode _focusNode = FocusNode();
+  final ImagePicker _picker = ImagePicker();
+  List<XFile> _selectedImages = [];
   bool _isSubmitting = false;
   bool _isOnline = true;
 
@@ -52,6 +57,27 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
       document: doc,
       selection: const TextSelection.collapsed(offset: 0),
     );
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final List<XFile> images = await _picker.pickMultiImage();
+      if (images.isNotEmpty) {
+        setState(() {
+          _selectedImages.addAll(images);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking images: $e')),
+      );
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
   }
 
   @override
@@ -101,9 +127,30 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
       return;
     }
 
+    List<String>? base64Files;
+    if (_selectedImages.isNotEmpty) {
+      base64Files = [];
+      for (var img in _selectedImages) {
+        final bytes = await img.readAsBytes();
+        final base64String = base64Encode(bytes);
+
+        // Determine mime type
+        final extension = img.path.split('.').last.toLowerCase();
+        String mimeType = 'image/jpeg';
+        if (extension == 'png') {
+          mimeType = 'image/png';
+        } else if (extension == 'gif') {
+          mimeType = 'image/gif';
+        }
+
+        base64Files.add('data:$mimeType;base64,$base64String');
+      }
+    }
+
     final result = await FindingInquiryService.storeFinding(
       findings: content,
       visitId: int.parse(visitId.toString()),
+      files: base64Files,
     );
 
     if (!mounted) return;
@@ -141,10 +188,13 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
       return;
     }
 
+    final List<String> imagePaths = _selectedImages.map((e) => e.path).toList();
+
     final success = await OfflineService.saveFindingOffline(
       inquiryId: int.parse(widget.inquiryId),
       visitId: visitId.toString(),
       findings: content,
+      images: imagePaths,
     );
 
     if (!mounted) return;
@@ -183,7 +233,7 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
   @override
   Widget build(BuildContext context) {
     final String dateStr = (widget.visit['visit_date'] ?? '').toString();
-    final String formattedDate = _formatVisitDate(dateStr);
+    final formattedDate = _formatVisitDate(dateStr);
     final String visitTime = (widget.visit['visit_time'] ?? '').toString();
 
     return Scaffold(
@@ -238,7 +288,7 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Offline mode: Findings will be saved and synced later',
+                        'Offline mode: Findings and images will be saved.',
                         style: TextStyle(
                           fontSize: 12,
                           color: const Color(0xFF014323).withOpacity(0.8),
@@ -325,7 +375,7 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
                               autoFocus: false,
                               expands: false,
                               scrollable: true,
-                              minHeight: 300,
+                              minHeight: 200, // Reduced minHeight to make space for images
                               sharedConfigurations: const quill.QuillSharedConfigurations(
                                 locale: Locale('en'),
                               ),
@@ -336,6 +386,107 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
                       ),
                     ),
                     const SizedBox(height: 12),
+
+                    // Image Section
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Attachments',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: _pickImage,
+                                  icon: const Icon(Icons.add_a_photo, size: 18),
+                                  label: const Text('Add Image'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xFF014323),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          if (_selectedImages.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Center(
+                                child: Text(
+                                  'No images selected',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              height: 120,
+                              padding: const EdgeInsets.all(12),
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _selectedImages.length,
+                                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                                itemBuilder: (context, index) {
+                                  return Stack(
+                                    children: [
+                                      Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.grey[300]!),
+                                          image: DecorationImage(
+                                            image: FileImage(File(_selectedImages[index].path)),
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: InkWell(
+                                          onTap: () => _removeImage(index),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.black54,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.close,
+                                              size: 14,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),

@@ -44,12 +44,18 @@ class _OfflineIndicatorState extends State<OfflineIndicator> {
       final isOnline = results.isNotEmpty &&
           !results.contains(ConnectivityResult.none);
 
+      // Force refresh pending count to avoid stale state
+      final currentPending = await OfflineService.getPendingSyncCount();
+
       if (mounted) {
-        setState(() => _isOnline = isOnline);
+        setState(() {
+          _isOnline = isOnline;
+          _pendingCount = currentPending;
+        });
       }
 
       // Auto-sync when connection restored
-      if (isOnline && _pendingCount > 0 && !_isSyncing) {
+      if (isOnline && currentPending > 0 && !_isSyncing) {
         await _syncData();
       }
     });

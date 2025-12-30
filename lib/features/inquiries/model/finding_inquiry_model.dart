@@ -20,9 +20,7 @@ class FindingInquiryModel {
 
     // Only add 'files' if it's not null and not empty
     if (files != null && files!.isNotEmpty) {
-      // Explicit cast to avoid "List<String>? can't be assigned to Object" error
-      json["files"] = files! as Object;
-      // Alternative (also works): json["files"] = List<String>.from(files!);
+      json["files"] = files;
     }
 
     return json;
