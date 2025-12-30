@@ -1,5 +1,3 @@
-// lib/core/permissions.dart
-
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 
 class InquiryPermissions {
@@ -18,9 +16,25 @@ class InquiryPermissions {
     return inquiry.isChairperson;
   }
 
-  // Check if user can edit findings
-  static bool canEditFinding(AssignToMeModel inquiry) {
-    return inquiry.isChairperson;
+  // ✅ UPDATED: Only the user who created the finding can edit it
+  // Chairperson CANNOT edit other users' findings
+  static bool canEditFinding(AssignToMeModel inquiry, {String? findingUserId, String? currentUserId}) {
+    print("🔍 Permission Check - canEditFinding:");
+    print("  - Finding User ID: '$findingUserId'");
+    print("  - Current User ID: '$currentUserId'");
+
+    // Only allow editing if the current user created this finding
+    if (findingUserId != null && currentUserId != null) {
+      // Ensure both are non-empty
+      if (findingUserId.isNotEmpty && currentUserId.isNotEmpty) {
+        final matches = findingUserId == currentUserId;
+        print("  ${matches ? '✅ Access granted' : '❌ Access denied'}: User ID match = $matches");
+        return matches;
+      }
+    }
+
+    print("  ❌ Access denied: No valid user ID match");
+    return false;
   }
 
   // Check if user can add annex

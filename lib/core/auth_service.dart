@@ -65,6 +65,63 @@ class AuthService {
     }
   }
 
+  /// ✅ **Get Current User Data**
+  static Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      final userData = await LocalStorage.getUser();
+      print("🔹 Current user data: $userData");
+      return userData;
+    } catch (e) {
+      print("❌ AuthService: getCurrentUser Error - $e");
+      return null;
+    }
+  }
+
+  /// ✅ **Get Current User ID**
+  static Future<String?> getCurrentUserId() async {
+    try {
+      final userData = await LocalStorage.getUser();
+
+      if (userData != null) {
+        // Try different possible ID field names from API
+        final userId = userData['id']?.toString() ??
+            userData['user_id']?.toString() ??
+            userData['userId']?.toString();
+
+        print("🔹 Current user ID: $userId");
+        return userId;
+      }
+
+      print("⚠️ No user data found");
+      return null;
+    } catch (e) {
+      print("❌ AuthService: getCurrentUserId Error - $e");
+      return null;
+    }
+  }
+
+  /// ✅ **Get Current User Name**
+  static Future<String?> getCurrentUserName() async {
+    try {
+      final userData = await LocalStorage.getUser();
+
+      if (userData != null) {
+        // Try different possible name field names from API
+        final userName = userData['name']?.toString() ??
+            userData['username']?.toString() ??
+            userData['full_name']?.toString();
+
+        print("🔹 Current user name: $userName");
+        return userName;
+      }
+
+      return null;
+    } catch (e) {
+      print("❌ AuthService: getCurrentUserName Error - $e");
+      return null;
+    }
+  }
+
   /// ✅ **Logout (Ensures API Call & Clears Token)**
   static Future<bool> logout() async {
     try {

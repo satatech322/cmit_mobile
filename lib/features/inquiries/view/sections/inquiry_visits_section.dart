@@ -9,6 +9,7 @@ class InquiryVisitsSection extends StatefulWidget {
   final Function(Map<String, dynamic>) onNavigateToFindings;
   final Function(Map<String, dynamic>, Map<String, dynamic>, int) onEditFinding;
   final VoidCallback onAddVisit;
+  final String? currentUserId;
 
   const InquiryVisitsSection({
     super.key,
@@ -17,6 +18,7 @@ class InquiryVisitsSection extends StatefulWidget {
     required this.onNavigateToFindings,
     required this.onEditFinding,
     required this.onAddVisit,
+    this.currentUserId,
   });
 
   @override
@@ -41,23 +43,29 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
       return path;
     }
 
-    // Remove leading slash if present
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
 
-    // Check if path already includes storage
     if (cleanPath.startsWith('storage/')) {
       return '$baseUrl/$cleanPath';
     }
 
-    // For finding attachments and other relative paths, add storage prefix
     return '$baseUrl/storage/$cleanPath';
   }
 
   @override
   Widget build(BuildContext context) {
-    // Check permissions
     final bool canAddVisit = InquiryPermissions.canAddFieldVisit(widget.inquiry);
-    final bool canEditFinding = InquiryPermissions.canEditFinding(widget.inquiry);
+
+    // Debug print to check currentUserId
+    print("🔹 InquiryVisitsSection - currentUserId: '${widget.currentUserId}'");
+
+    // Show loading indicator if currentUserId is not yet loaded
+    if (widget.currentUserId == null && !widget.inquiry.isChairperson) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -69,16 +77,11 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
             ...widget.visits.asMap().entries.map((entry) {
               final int visitNumber = entry.key + 1;
               final visit = entry.value as Map<String, dynamic>;
-              return _visitCard(
-                visit,
-                visitNumber,
-                canEditFinding: canEditFinding,
-              );
+              return _visitCard(visit, visitNumber);
             }).toList(),
 
           const SizedBox(height: 12),
 
-          // Add Visit Button - Only show to chairperson
           if (canAddVisit)
             Center(
               child: OutlinedButton.icon(
@@ -100,11 +103,7 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
     );
   }
 
-  Widget _visitCard(
-      Map<String, dynamic> visit,
-      int visitNumber, {
-        required bool canEditFinding,
-      }) {
+  Widget _visitCard(Map<String, dynamic> visit, int visitNumber) {
     final findingsList = (visit['findings'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
 
@@ -227,12 +226,27 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
                     ...findingsList.asMap().entries.map((entry) {
                       final int index = entry.key + 1;
                       final Map<String, dynamic> finding = entry.value;
+
+                      // Get finding's user ID
+                      final String findingUserId = (finding['user_id'] ?? '').toString();
+
+                      print("📝 Finding #$index - User ID: '$findingUserId', Current User: '${widget.currentUserId}'");
+
+                      // Check if current user can edit this specific finding
+                      final bool canEdit = InquiryPermissions.canEditFinding(
+                        widget.inquiry,
+                        findingUserId: findingUserId,
+                        currentUserId: widget.currentUserId,
+                      );
+
+                      print("🔑 Finding #$index - canEdit result: $canEdit");
+
                       return _findingItem(
                         user: (finding['user'] ?? 'Unknown').toString(),
                         findingsText: (finding['findings'] ?? '').toString(),
                         attachments: finding['attachments'] as List<dynamic>? ?? [],
                         number: index,
-                        canEdit: canEditFinding,
+                        canEdit: canEdit,
                         onEdit: () => widget.onEditFinding(visit, finding, index),
                       );
                     }).toList(),
@@ -299,6 +313,9 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
   }) {
     final int attachmentCount = attachments.length;
 
+    // Debug print to verify canEdit value in UI
+    print("🎨 UI Render - Finding #$number canEdit: $canEdit");
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
@@ -337,7 +354,7 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
                   ),
                 ),
               ),
-              // Edit button - Only show to chairperson
+              // Only show edit button when canEdit is true
               if (canEdit)
                 IconButton(
                   icon: const Icon(Icons.edit, size: 16, color: Color(0xFF014323)),
@@ -355,7 +372,6 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
               style: const TextStyle(fontSize: 13, height: 1.4),
             ),
           ],
-          // Display attachments if available
           if (attachmentCount > 0) ...[
             const SizedBox(height: 10),
             Row(
@@ -476,7 +492,6 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
               link,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
-                debugPrint('Image load error: $error for URL: $link');
                 return _buildFileIcon(Icons.broken_image, Colors.red);
               },
               loadingBuilder: (context, child, loadingProgress) {
@@ -502,11 +517,7 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
 
   Widget _buildFileIcon(IconData icon, Color color) {
     return Center(
-      child: Icon(
-        icon,
-        size: 28,
-        color: color,
-      ),
+      child: Icon(icon, size: 28, color: color),
     );
   }
 

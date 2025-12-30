@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
+import 'package:cmit/core/auth_service.dart'; // Add this import
 
 // Import section widgets
 import 'sections/inquiry_header_section.dart';
@@ -33,6 +34,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
   late List<dynamic> documents = [];
   late List<dynamic> allVisits = [];
   late List<dynamic> allAnnexes = [];
+  String? _currentUserId; // Add this
 
   // Track expansion state
   bool _detailsExpanded = false;
@@ -48,6 +50,16 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
     allVisits = i.visits;
     documents = i.requiredDocuments;
     allAnnexes = i.annexes;
+    _loadCurrentUserId(); // Add this
+  }
+
+  /// ✅ Load current user ID from AuthService
+  Future<void> _loadCurrentUserId() async {
+    final userId = await AuthService.getCurrentUserId();
+    setState(() {
+      _currentUserId = userId;
+    });
+    print("🔹 Loaded current user ID: $_currentUserId");
   }
 
   void _addVisit() {
@@ -89,9 +101,16 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
   }
 
   void _editFinding(Map<String, dynamic> visit, Map<String, dynamic> finding, int index) {
-    // Check permission
-    if (!InquiryPermissions.canEditFinding(i)) {
-      _showPermissionError('Only chairperson can edit findings');
+    // Get the finding's user ID
+    final String findingUserId = (finding['user_id'] ?? '').toString();
+
+    // Check permission with user-specific logic
+    if (!InquiryPermissions.canEditFinding(
+      i,
+      findingUserId: findingUserId,
+      currentUserId: _currentUserId,
+    )) {
+      _showPermissionError('You can only edit your own findings');
       return;
     }
 
@@ -321,6 +340,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
                 onNavigateToFindings: _navigateToFindings,
                 onEditFinding: _editFinding,
                 onAddVisit: _addVisit,
+                currentUserId: _currentUserId, // Pass the current user ID
               ),
             ),
 
