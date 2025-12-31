@@ -47,4 +47,6 @@ class API {
   // Inside class API
   static const String getProfileData = "${ApiConfig.baseApiUrl}/get/profile/data";
 
+  static const String completeInquiry = "${ApiConfig.baseApiUrl}/store/complete/inquiries";
+
 }

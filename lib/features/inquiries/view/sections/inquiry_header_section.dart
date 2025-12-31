@@ -1,23 +1,124 @@
-// lib/features/inquiries/view/sections/inquiry_header_section.dart
 import 'package:flutter/material.dart';
 import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
+import 'package:cmit/core/complete_inquiry_service.dart'; // ✅ Correct import
 
 class InquiryHeaderSection extends StatelessWidget {
   final AssignToMeModel inquiry;
-  final VoidCallback? onFinalizeConfirmed;
+  final VoidCallback? onFinalizeSuccess;
 
   const InquiryHeaderSection({
     super.key,
     required this.inquiry,
-    this.onFinalizeConfirmed,
+    this.onFinalizeSuccess,
   });
+
+  /// Show confirmation dialog and handle API call
+  Future<void> _showFinalizeConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surfaceColor,
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_circle_outline, color: AppTheme.primaryColor),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Finalize Inquiry',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to finalize this inquiry?\n\nThis action will mark the inquiry as completed and cannot be undone.',
+            style: TextStyle(fontSize: 15, height: 1.5, color: AppTheme.textSecondary),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.textSecondary,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text(
+                'Confirm Finalize',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    // If user confirmed
+    if (confirmed == true && context.mounted) {
+      _handleFinalize(context);
+    }
+  }
+
+  /// Call API to finalize the inquiry
+  Future<void> _handleFinalize(BuildContext context) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // ✅ Call the service with correct method
+    final result = await CompleteInquiryService.completeInquiry(
+      inquiryId: inquiry.id,
+    );
+
+    // Dismiss loading
+    if (context.mounted) {
+      Navigator.of(context).pop();
+
+      // Show result message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Unknown response'),
+          backgroundColor: result['success'] ? Colors.green : Colors.red,
+
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      // Trigger success callback
+      if (result['success'] && onFinalizeSuccess != null) {
+        onFinalizeSuccess!();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Check if user has permission to finalize
     final bool canFinalize = InquiryPermissions.canFinalizeInquiry(inquiry);
+    print("DEBUG: InquiryHeaderSection build. canFinalize: $canFinalize, userRole: ${inquiry.userRole}");
 
     return Container(
       width: double.infinity,
@@ -37,7 +138,7 @@ class InquiryHeaderSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Top Bar: Badges & Action
+          // Top Bar: Badges & Finalize Button
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -61,15 +162,18 @@ class InquiryHeaderSection extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: _FinalizeButton(
-                    onPressed: () => _showFinalizeConfirmation(context),
+                    onPressed: () {
+                        print("DEBUG: Finalize button onPressed triggered");
+                        _showFinalizeConfirmation(context);
+                    },
                   ),
                 ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
-          // 2. Main Title
+
+          // Main Title
           Text(
             inquiry.title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -79,10 +183,10 @@ class InquiryHeaderSection extends StatelessWidget {
               letterSpacing: -0.5,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
-          // 3. Metadata Grid
+
+          // Metadata Grid
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
@@ -119,78 +223,9 @@ class InquiryHeaderSection extends StatelessWidget {
       ),
     );
   }
-
-  void _showFinalizeConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.surfaceColor,
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_circle_outline, color: AppTheme.primaryColor),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Finalize Inquiry',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Are you sure you want to finalize this inquiry?\n\nThis action will mark the inquiry as completed and cannot be undone.',
-            style: TextStyle(fontSize: 15, height: 1.5, color: AppTheme.textSecondary),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.textSecondary,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (onFinalizeConfirmed != null) {
-                  onFinalizeConfirmed!();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Confirm Finalize',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
+
+// Private Widgets
 
 class _StatusChip extends StatelessWidget {
   final String text;
@@ -213,10 +248,7 @@ class _StatusChip extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 8),
           Text(
@@ -269,7 +301,10 @@ class _FinalizeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onPressed,
+      onTap: () {
+        print("DEBUG: _FinalizeButton InkWell tapped");
+        onPressed();
+      },
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

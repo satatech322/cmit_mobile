@@ -7,6 +7,7 @@ import 'package:cmit/core/auth_service.dart';
 import 'dart:async';
 import 'package:cmit/core/assign_to_me.dart';
 import 'package:cmit/core/global_refresh_event.dart';
+import 'package:cmit/core/complete_inquiry_service.dart';
 
 // Import section widgets
 import 'sections/inquiry_details_section.dart';
@@ -335,7 +336,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                // Trigger finalize action logic here
+                _handleFinalize();
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
               child: const Text('Finalize', style: TextStyle(color: Colors.white)),
@@ -344,6 +345,36 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
         );
       },
     );
+  }
+
+  Future<void> _handleFinalize() async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await CompleteInquiryService.completeInquiry(inquiryId: i.id);
+
+    if (!mounted) return;
+    
+    // Dismiss loading
+    Navigator.of(context).pop();
+
+    // Show result message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['message'] ?? 'Unknown response'),
+        backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    // If successful, close the inquiry details screen
+    if (result['success'] == true) {
+       Navigator.of(context).pop();
+    }
   }
 
   @override
