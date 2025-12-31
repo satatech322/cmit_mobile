@@ -2,6 +2,7 @@
 
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class RequiredDocumentUploadService {
   static Future<Map<String, dynamic>> uploadDocument({
@@ -24,6 +25,9 @@ class RequiredDocumentUploadService {
       );
 
       if (response['success'] == true) {
+        // Notify app to reload data
+        GlobalRefreshEvent.instance.notify();
+
         return {
           'success': true,
           'message': response['data']['message'] ?? 'Document uploaded successfully',

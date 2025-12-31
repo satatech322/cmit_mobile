@@ -1,6 +1,7 @@
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
 import 'package:cmit/features/inquiries/model/required_documents_model.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class RequiredDocumentsService {
   /// Store Required Documents for an Inquiry
@@ -26,6 +27,9 @@ class RequiredDocumentsService {
 
       if (response['success'] == true) {
         final result = RequiredDocumentsResponse.fromJson(response);
+        
+        // Notify app to reload data
+        GlobalRefreshEvent.instance.notify();
 
         return {
           'success': true,
