@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'inquiries_screen.dart'; // Import the InquiriesScreen file
-import 'activities_screen.dart'; // Import the ActivitiesScreen file
 import 'settings_screen.dart'; // Import the SettingsScreen file
 import 'profile_screen.dart'; // Import the EditProfileScreen file
 
@@ -98,23 +97,6 @@ class CustomDrawer extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const InquiriesScreen(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.history, color: Colors.black87),
-                  title: const Text(
-                    "Activity",
-                    style: TextStyle(color: Colors.black87),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, color: Colors.black87, size: 16), // Right arrow icon
-                  onTap: () {
-                    Navigator.pop(context); // Close the drawer
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ActivitiesScreen(),
                       ),
                     );
                   },

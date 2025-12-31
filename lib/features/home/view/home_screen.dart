@@ -3,7 +3,6 @@ import 'package:cmit/features/home/widgets/home_top_section.dart';
 import 'package:cmit/features/home/view/custom_drawer.dart';
 import 'package:cmit/features/home/view/notification_screen.dart';
 import 'package:cmit/features/inquiries/view/inquiries_screen.dart';
-import 'package:cmit/features/activity/view/activity_screen.dart';
 import 'package:cmit/features/home/view/profile_screen.dart';
 import 'package:cmit/features/home/widgets/custom_bottom_nav_bar.dart';
 
@@ -38,8 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return const InquiriesScreen();
       case 2:
-        return const ActivitiesScreen();
-      case 3:
         return const ProfileScreen();
       default:
         return const SizedBox.shrink();
