@@ -625,7 +625,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildInquiriesList() {
     if (isLoadingInquiries) {
-      return const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()));
+      return const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator(color: Color(0xFF014323))));
     }
     if (inquiriesError.isNotEmpty) {
       return Center(
