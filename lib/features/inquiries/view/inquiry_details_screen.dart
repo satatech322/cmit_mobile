@@ -2,7 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
-import 'package:cmit/core/auth_service.dart'; // Add this import
+import 'package:cmit/core/auth_service.dart';
+import 'dart:async';
+import 'package:cmit/core/assign_to_me.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 // Import section widgets
 import 'sections/inquiry_header_section.dart';
@@ -36,21 +39,73 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
   late List<dynamic> allAnnexes = [];
   String? _currentUserId; // Add this
 
+  // Local state inquiry model
+  late AssignToMeModel _inquiry;
+  StreamSubscription? _refreshSubscription;
+
   // Track expansion state
   bool _detailsExpanded = false;
   bool _visitsExpanded = false;
   bool _annexExpanded = false;
   bool _documentsExpanded = false;
 
-  AssignToMeModel get i => widget.inquiry;
+  AssignToMeModel get i => _inquiry;
 
   @override
   void initState() {
     super.initState();
+    _inquiry = widget.inquiry;
     allVisits = i.visits;
     documents = i.requiredDocuments;
     allAnnexes = i.annexes;
     _loadCurrentUserId(); // Add this
+    
+    // Subscribe to global refresh events
+    print("🔔 Subscribing to GlobalRefreshEvent in InquiryDetailsScreen");
+    _refreshSubscription = GlobalRefreshEvent.instance.refreshStream.listen((_) {
+      print("📥 Received Global Refresh Event - Refreshing Inquiry Data...");
+      _refreshData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshData() async {
+    // Fetch all assigned inquiries
+    final result = await AssignToMe.getAssignedInquiries();
+    
+    if (result['success'] == true) {
+      final List<AssignToMeModel> inquiries = result['inquiries'];
+      
+      try {
+        // Find the current inquiry in the list
+        final updatedInquiry = inquiries.firstWhere((inq) => inq.id == widget.inquiry.id);
+        
+        if (mounted) {
+          setState(() {
+            _inquiry = updatedInquiry;
+            allVisits = _inquiry.visits;
+            allAnnexes = _inquiry.annexes;
+            documents = _inquiry.requiredDocuments;
+          });
+          print("✅ Inquiry Data Refreshed Successfully!");
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data updated successfully'),
+              backgroundColor: Color(0xFF014323),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      } catch (e) {
+        print("⚠️ Current inquiry not found in the refreshed list.");
+      }
+    }
   }
 
   /// ✅ Load current user ID from AuthService

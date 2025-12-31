@@ -2,6 +2,7 @@
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
 import 'package:cmit/features/inquiries/model/finding_inquiry_model.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class FindingInquiryService {
   /// Save Finding for a Visit with optional file attachments
@@ -35,6 +36,9 @@ class FindingInquiryService {
         final apiData = response['data'] as Map<String, dynamic>;
 
         if (apiData['success'] == true) {
+          // Notify app to reload data
+          GlobalRefreshEvent.instance.notify();
+          
           return {
             'success': true,
             'message': apiData['message'] ?? "Finding saved successfully!",

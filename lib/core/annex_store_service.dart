@@ -3,6 +3,7 @@
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
 import 'package:cmit/features/inquiries/model/annex_store_model.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class AnnexService {
   /// Store a new Annex
@@ -26,6 +27,10 @@ class AnnexService {
 
       if (response['success'] == true) {
         final annex = AnnexModel.fromJson(response['data']);
+        
+        // Notify app to reload data
+        GlobalRefreshEvent.instance.notify();
+
         return {
           'success': true,
           'message': response['data']['message'] ?? 'Annex added successfully',
