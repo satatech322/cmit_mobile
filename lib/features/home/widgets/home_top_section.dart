@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cmit/features/home/view/inquiries_details_screen.dart';
-import 'package:cmit/core//inquiry_statistics_service.dart';
+import 'package:cmit/features/inquiries/view/inquiry_details_screen.dart';
+import 'package:cmit/core/inquiry_statistics_service.dart';
 import 'package:cmit/features/home/model/inquiry_statistics_model.dart';
+import 'package:cmit/core/assign_to_me.dart';
+import 'package:cmit/features/home/model/assign_to_me_model.dart';
+import 'package:cmit/features/offline/services/offline_service.dart';
+import 'package:cmit/features/offline/view/offline_inquiry_detail_screen.dart';
 
 class HomeTopSection extends StatefulWidget {
   const HomeTopSection({super.key});
@@ -15,44 +19,11 @@ class _HomeTopSectionState extends State<HomeTopSection> {
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
   GlobalKey<RefreshIndicatorState>();
 
-  // Sample inquiries (replace with API list later if needed)
-  List<Map<String, dynamic>> inquiries = [
-    {
-      'ref': 'REF-00123',
-      'title': 'Financial Audit of MIT Department',
-      'dept': 'Finance',
-      'assignedTo': 'Malik Afzal',
-      'date': 'July 01 2025',
-      'status': 'Open',
-      'description':
-      'Detailed financial audit inquiry regarding MIT department budget allocation and spending.',
-      'color': Colors.green[100]!,
-    },
-    {
-      'ref': 'REF-00124',
-      'title': 'IT Infrastructure Upgrade',
-      'dept': 'IT',
-      'assignedTo': 'Haider Ali',
-      'date': 'July 03 2025',
-      'status': 'In Progress',
-      'description':
-      'Upgrade of servers, network equipment, and storage for IT infrastructure.',
-      'color': Colors.orange[100]!,
-    },
-    {
-      'ref': 'REF-00125',
-      'title': 'Library System Update',
-      'dept': 'Library',
-      'assignedTo': 'Sara Khan',
-      'date': 'July 05 2025',
-      'status': 'Closed',
-      'description':
-      'Update and maintenance of digital library management system.',
-      'color': Colors.grey[300]!,
-    },
-  ];
-
-  List<Map<String, dynamic>> filteredInquiries = [];
+  // Recent inquiries from API
+  List<AssignToMeModel> inquiries = [];
+  List<AssignToMeModel> filteredInquiries = [];
+  bool isLoadingInquiries = true;
+  String inquiriesError = '';
 
   // Statistics state
   int totalInquiries = 0;
@@ -63,9 +34,8 @@ class _HomeTopSectionState extends State<HomeTopSection> {
   @override
   void initState() {
     super.initState();
-    filteredInquiries = inquiries;
     _searchController.addListener(_filterInquiries);
-    _loadStatistics(); // Initial load
+    _loadData(); // Initial load
   }
 
   @override
@@ -75,11 +45,17 @@ class _HomeTopSectionState extends State<HomeTopSection> {
     super.dispose();
   }
 
+  /// Combined load function - loads both statistics and inquiries
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadStatistics(),
+      _loadRecentInquiries(),
+    ]);
+  }
+
   /// Combined refresh function - called on pull-to-refresh
   Future<void> _onRefresh() async {
-    await _loadStatistics();
-    // You can also refresh the inquiries list here if it's from API
-    // await _loadInquiriesList();
+    await _loadData();
   }
 
   /// Load statistics from API
@@ -110,16 +86,91 @@ class _HomeTopSectionState extends State<HomeTopSection> {
     }
   }
 
+  /// Load recent 4 inquiries from API
+  Future<void> _loadRecentInquiries() async {
+    setState(() {
+      isLoadingInquiries = true;
+      inquiriesError = '';
+    });
+
+    try {
+      final result = await AssignToMe.getAssignedInquiries()
+          .timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          return {
+            'success': false,
+            'message': 'Request timed out. Please try again.',
+          };
+        },
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        final allInquiries = result['inquiries'] as List<AssignToMeModel>;
+
+        // Take only the first 4 inquiries
+        final recentInquiries = allInquiries.take(4).toList();
+
+        setState(() {
+          inquiries = recentInquiries;
+          filteredInquiries = List.from(inquiries);
+          isLoadingInquiries = false;
+          inquiriesError = '';
+        });
+      } else {
+        // API returned error
+        setState(() {
+          inquiries = [];
+          filteredInquiries = [];
+          isLoadingInquiries = false;
+          inquiriesError = result['message']?.toString() ?? 'Failed to load inquiries';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        inquiries = [];
+        filteredInquiries = [];
+        isLoadingInquiries = false;
+        inquiriesError = 'Unable to load inquiries';
+      });
+    }
+  }
+
   void _filterInquiries() {
     final query = _searchController.text.toLowerCase();
     setState(() {
       filteredInquiries = inquiries.where((inquiry) {
-        final ref = inquiry['ref'].toString().toLowerCase();
-        final title = inquiry['title'].toString().toLowerCase();
-        final dept = inquiry['dept'].toString().toLowerCase();
-        return ref.contains(query) || title.contains(query) || dept.contains(query);
+        return inquiry.title.toLowerCase().contains(query) ||
+            inquiry.department.toLowerCase().contains(query) ||
+            inquiry.initiator.toLowerCase().contains(query) ||
+            inquiry.assignedTo.toLowerCase().contains(query);
       }).toList();
     });
+  }
+
+  /// Navigate to inquiry details - checks online status
+  Future<void> _navigateToInquiryDetails(AssignToMeModel inquiry) async {
+    final hasInternet = await OfflineService.hasInternet();
+
+    if (!mounted) return;
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => hasInternet
+            ? InquiryDetailsScreen(inquiry: inquiry) // Online: regular screen
+            : OfflineInquiryDetailsScreen(inquiry: inquiry), // Offline: read-only screen
+      ),
+    );
+
+    // Refresh if changes were made (only possible when online)
+    if (result == true) {
+      _loadData();
+    }
   }
 
   @override
@@ -127,11 +178,11 @@ class _HomeTopSectionState extends State<HomeTopSection> {
     return RefreshIndicator(
       key: _refreshIndicatorKey,
       onRefresh: _onRefresh,
-      color: const Color(0xFF379E4B), // Matches your app theme
+      color: const Color(0xFF379E4B),
       backgroundColor: Colors.white,
       strokeWidth: 3.0,
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(), // Important for refresh even when content is short
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,20 +233,91 @@ class _HomeTopSectionState extends State<HomeTopSection> {
             ),
             const SizedBox(height: 12),
 
-            /// Inquiry Cards
-            ...filteredInquiries.map((inquiry) => _buildInquiryCard(
-              context: context,
-              ref: inquiry['ref'],
-              title: inquiry['title'],
-              dept: inquiry['dept'],
-              assignedTo: inquiry['assignedTo'],
-              date: inquiry['date'],
-              status: inquiry['status'],
-              description: inquiry['description'],
-              color: inquiry['color'],
-            )),
+            /// Loading or Inquiry Cards
+            if (isLoadingInquiries)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: Color(0xFF379E4B),
+                  ),
+                ),
+              )
+            else if (inquiriesError.isNotEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        inquiriesError,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _loadRecentInquiries,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF379E4B),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (filteredInquiries.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _searchController.text.isEmpty
+                              ? 'No recent inquiries'
+                              : 'No inquiries found',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...filteredInquiries.map((inquiry) => _buildInquiryCard(
+                  context: context,
+                  inquiry: inquiry,
+                )),
 
-            // Add some bottom padding so user can pull down even at the end
+            // Add some bottom padding
             const SizedBox(height: 80),
           ],
         ),
@@ -203,7 +325,6 @@ class _HomeTopSectionState extends State<HomeTopSection> {
     );
   }
 
-  // All your existing helper widgets remain unchanged
   Widget _buildSearchBar(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +341,7 @@ class _HomeTopSectionState extends State<HomeTopSection> {
         TextField(
           controller: _searchController,
           decoration: InputDecoration(
-            hintText: "Enter inquiry ref, title, or department",
+            hintText: "Enter inquiry title, department, or person",
             hintStyle: const TextStyle(color: Colors.black38),
             counterText: '',
             contentPadding:
@@ -302,34 +423,12 @@ class _HomeTopSectionState extends State<HomeTopSection> {
 
   Widget _buildInquiryCard({
     required BuildContext context,
-    required String ref,
-    required String title,
-    required String dept,
-    required String assignedTo,
-    required String date,
-    required String status,
-    required String description,
-    required Color color,
+    required AssignToMeModel inquiry,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => InquiryDetailsScreen(
-                ref: ref,
-                title: title,
-                dept: dept,
-                assignedTo: assignedTo,
-                date: date,
-                status: status,
-                description: description,
-              ),
-            ),
-          );
-        },
+        onTap: () => _navigateToInquiryDetails(inquiry),
         child: Card(
           color: Colors.white,
           shape: RoundedRectangleBorder(
@@ -343,44 +442,60 @@ class _HomeTopSectionState extends State<HomeTopSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Title
                 Text(
-                  ref,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.teal,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  title,
+                  inquiry.title,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 10),
+
+                // Department Row
+                Row(
+                  children: [
+                    Icon(
+                      Icons.business,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        inquiry.department,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  "$dept : Created on $date",
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                ),
-                const SizedBox(height: 8),
+
+                // Assigned To Row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                    Icon(
+                      Icons.person,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
                       child: Text(
-                        status,
-                        style: const TextStyle(
+                        inquiry.assignedTo,
+                        style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w500,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
