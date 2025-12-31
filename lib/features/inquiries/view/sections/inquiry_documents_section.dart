@@ -9,6 +9,7 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:cmit/config/theme.dart';
 import 'package:cmit/core/required_document_upload_service.dart';
 import '../requested_documents.dart';
 
@@ -153,7 +154,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : const Color(0xFF014323),
+        backgroundColor: isError ? AppTheme.errorColor : AppTheme.primaryColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
       ),
@@ -203,7 +204,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                   ),
@@ -219,7 +220,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
                 '${attachments.length} ${attachments.length == 1 ? 'attachment' : 'attachments'}',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppTheme.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -265,9 +266,9 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
+        color: AppTheme.backgroundColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: ListTile(
         leading: Container(
@@ -283,20 +284,20 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1A1A1A),
+            color: AppTheme.textPrimary,
           ),
         ),
         subtitle: Text(
           fileType,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            color: AppTheme.textSecondary,
           ),
         ),
         trailing: IconButton(
           onPressed: () => _openDocument(fullUrl, fileType, attachmentType),
           icon: const Icon(Icons.open_in_new),
-          color: const Color(0xFF014323),
+          color: AppTheme.primaryColor,
           tooltip: 'Open',
         ),
       ),
@@ -379,8 +380,8 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Request Document'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF014323),
-                side: const BorderSide(color: Color(0xFF014323)),
+                foregroundColor: AppTheme.primaryColor,
+                side: const BorderSide(color: AppTheme.primaryColor),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -405,12 +406,12 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: hasAttachments
-              ? const Color(0xFF014323).withOpacity(0.3)
-              : const Color(0xFFE0E0E0),
+              ? AppTheme.primaryColor.withOpacity(0.3)
+              : Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
@@ -428,13 +429,13 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: hasAttachments
-                    ? const Color(0xFFE8F5E9)
-                    : const Color(0xFFF5F5F5),
+                    ? AppTheme.primaryColor.withOpacity(0.1)
+                    : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 hasAttachments ? Icons.check_circle : Icons.description_outlined,
-                color: hasAttachments ? const Color(0xFF014323) : Colors.grey[600],
+                color: hasAttachments ? AppTheme.primaryColor : Colors.grey[600],
                 size: 20,
               ),
             ),
@@ -449,7 +450,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF1A1A1A),
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -464,8 +465,8 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
                       color: isUploading
                           ? Colors.orange[700]
                           : hasAttachments
-                          ? const Color(0xFF014323)
-                          : Colors.grey[600],
+                          ? AppTheme.primaryColor
+                          : AppTheme.textSecondary,
                       fontWeight:
                       isUploading || hasAttachments ? FontWeight.w500 : FontWeight.normal,
                     ),
@@ -480,7 +481,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(Color(0xFF014323)),
+                  valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
                 ),
               )
             else if (hasAttachments)
@@ -492,7 +493,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
                   style: const TextStyle(fontSize: 13),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF014323),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
@@ -507,7 +508,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
                 icon: const Icon(Icons.upload_file, size: 16),
                 label: const Text('Upload', style: TextStyle(fontSize: 13)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF014323),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
@@ -681,7 +682,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        backgroundColor: const Color(0xFF014323),
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,7 +711,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(Color(0xFF014323)),
+              valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
             ),
             const SizedBox(height: 16),
             Text(
@@ -755,7 +756,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF014323),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
@@ -800,32 +801,13 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
         debugPrint('Page $page error: $error');
       },
       onViewCreated: (PDFViewController pdfViewController) {
-        // You can save this controller if you need more control
+        // You can use the controller to interact with the PDF
       },
       onPageChanged: (int? page, int? total) {
-        if (mounted && page != null) {
-          setState(() {
-            currentPage = page;
-            if (total != null) totalPages = total;
-          });
-        }
+        setState(() {
+          currentPage = page!;
+        });
       },
     );
-  }
-
-  @override
-  void dispose() {
-    // Clean up the temporary file
-    if (localFilePath != null) {
-      try {
-        final file = File(localFilePath!);
-        if (file.existsSync()) {
-          file.deleteSync();
-        }
-      } catch (e) {
-        debugPrint('Error deleting temp file: $e');
-      }
-    }
-    super.dispose();
   }
 }

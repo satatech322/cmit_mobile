@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
 import '../add_annex.dart';
@@ -103,7 +104,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF014323),
+                      color: AppTheme.primaryColor,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -122,7 +123,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                   ),
@@ -138,7 +139,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                 '${files.length} ${files.length == 1 ? 'file' : 'files'}',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppTheme.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -167,8 +168,8 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text('Add Attachment'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF014323),
-                      side: const BorderSide(color: Color(0xFF014323)),
+                      foregroundColor: AppTheme.primaryColor,
+                      side: const BorderSide(color: AppTheme.primaryColor),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -211,9 +212,9 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
+        color: AppTheme.backgroundColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: ListTile(
         leading: Container(
@@ -229,7 +230,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1A1A1A),
+            color: AppTheme.textPrimary,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -238,13 +239,13 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
           fileType.isNotEmpty ? fileType : 'File',
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            color: AppTheme.textSecondary,
           ),
         ),
         trailing: IconButton(
           onPressed: () => _openFile(fullUrl, fileType, filename),
           icon: const Icon(Icons.open_in_new),
-          color: const Color(0xFF014323),
+          color: AppTheme.primaryColor,
           tooltip: 'Open',
         ),
       ),
@@ -319,7 +320,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : const Color(0xFF014323),
+        backgroundColor: isError ? AppTheme.errorColor : AppTheme.primaryColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
       ),
@@ -352,7 +353,6 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
 
           const SizedBox(height: 12),
 
-          // Add Annex Button - Only show to chairperson
           if (canAddAnnex)
             Center(
               child: OutlinedButton.icon(
@@ -360,8 +360,8 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add Annex'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF014323),
-                  side: const BorderSide(color: Color(0xFF014323)),
+                  foregroundColor: AppTheme.primaryColor,
+                  side: const BorderSide(color: AppTheme.primaryColor),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -388,12 +388,12 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: hasFiles
-              ? const Color(0xFF014323).withOpacity(0.3)
-              : const Color(0xFFE0E0E0),
+              ? AppTheme.primaryColor.withOpacity(0.3)
+              : Colors.grey.shade300,
         ),
         boxShadow: [
           BoxShadow(
@@ -411,13 +411,13 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: hasFiles
-                    ? const Color(0xFFE8F5E9)
-                    : const Color(0xFFF5F5F5),
+                    ? AppTheme.primaryColor.withOpacity(0.1)
+                    : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 hasFiles ? Icons.folder_special : Icons.folder_outlined,
-                color: hasFiles ? const Color(0xFF014323) : Colors.grey[600],
+                color: hasFiles ? AppTheme.primaryColor : Colors.grey[600],
                 size: 20,
               ),
             ),
@@ -432,7 +432,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF014323),
+                          color: AppTheme.primaryColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -451,7 +451,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF1A1A1A),
+                            color: AppTheme.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -467,8 +467,8 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                     style: TextStyle(
                       fontSize: 12,
                       color: hasFiles
-                          ? const Color(0xFF014323)
-                          : Colors.grey[600],
+                          ? AppTheme.primaryColor
+                          : AppTheme.textSecondary,
                       fontWeight: hasFiles ? FontWeight.w500 : FontWeight.normal,
                     ),
                   ),
@@ -487,7 +487,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                       style: const TextStyle(fontSize: 13),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF014323),
+                      backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       shape: RoundedRectangleBorder(
@@ -499,11 +499,11 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                   if (canAddAttachment) ...[
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.add, size: 18, color: Color(0xFF014323)),
+                      icon: const Icon(Icons.add, size: 18, color: AppTheme.primaryColor),
                       onPressed: () => _navigateToAddAttachment(annex, annexNumber),
                       tooltip: 'Add Attachment',
                       style: IconButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF014323)),
+                        side: const BorderSide(color: AppTheme.primaryColor),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
                         ),
@@ -521,7 +521,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text('Add Files', style: TextStyle(fontSize: 13)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF014323),
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         shape: RoundedRectangleBorder(
@@ -533,11 +533,11 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
                   if (canEditAnnex) ...[
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.edit, size: 18, color: Color(0xFF014323)),
+                      icon: const Icon(Icons.edit, size: 18, color: AppTheme.primaryColor),
                       onPressed: () => widget.onEditAnnex(annex, annexNumber),
                       tooltip: 'Edit Annex',
                       style: IconButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF014323)),
+                        side: const BorderSide(color: AppTheme.primaryColor),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
                         ),
@@ -641,7 +641,7 @@ class ImageViewerScreen extends StatelessWidget {
   }
 }
 
-// PDF Viewer Screen (unchanged - keeping it as is)
+// PDF Viewer Screen (unchanged)
 class PDFViewerScreen extends StatefulWidget {
   final String pdfUrl;
   final String title;
@@ -719,7 +719,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        backgroundColor: const Color(0xFF014323),
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -748,7 +748,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(Color(0xFF014323)),
+              valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
             ),
             const SizedBox(height: 16),
             Text(
@@ -793,7 +793,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF014323),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
@@ -804,62 +804,38 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
       );
     }
 
-    if (localFilePath == null) {
-      return const Center(child: Text('PDF file not available'));
-    }
-
-    return PDFView(
-      filePath: localFilePath!,
-      enableSwipe: true,
-      swipeHorizontal: false,
-      autoSpacing: true,
-      pageFling: true,
-      pageSnap: true,
-      defaultPage: currentPage,
-      fitPolicy: FitPolicy.BOTH,
-      preventLinkNavigation: false,
-      onRender: (pages) {
-        if (mounted) {
+    if (localFilePath != null) {
+      return PDFView(
+        filePath: localFilePath!,
+        enableSwipe: true,
+        swipeHorizontal: false, // Vertical scrolling is usually better on mobile
+        autoSpacing: true,
+        pageFling: false,
+        onRender: (pages) {
           setState(() {
-            totalPages = pages ?? 0;
+            totalPages = pages!;
           });
-        }
-      },
-      onError: (error) {
-        debugPrint('PDF render error: $error');
-        if (mounted) {
+        },
+        onError: (error) {
           setState(() {
             hasError = true;
             errorMessage = error.toString();
           });
-        }
-      },
-      onPageError: (page, error) {
-        debugPrint('Page $page error: $error');
-      },
-      onPageChanged: (int? page, int? total) {
-        if (mounted && page != null) {
+        },
+        onPageError: (page, error) {
+          debugPrint('$page: ${error.toString()}');
+        },
+        onViewCreated: (PDFViewController pdfViewController) {
+          // You can use the controller to interact with the PDF
+        },
+        onPageChanged: (int? page, int? total) {
           setState(() {
-            currentPage = page;
-            if (total != null) totalPages = total;
+            currentPage = page!;
           });
-        }
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    if (localFilePath != null) {
-      try {
-        final file = File(localFilePath!);
-        if (file.existsSync()) {
-          file.deleteSync();
-        }
-      } catch (e) {
-        debugPrint('Error deleting temp file: $e');
-      }
+        },
+      );
     }
-    super.dispose();
+    
+    return const SizedBox.shrink();
   }
 }

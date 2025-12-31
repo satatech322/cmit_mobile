@@ -1,5 +1,6 @@
 // lib/features/inquiries/view/sections/inquiry_header_section.dart
 import 'package:flutter/material.dart';
+import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
 
@@ -20,80 +21,99 @@ class InquiryHeaderSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. Top Bar: Badges & Action
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  inquiry.title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
-                  ),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _StatusChip(
+                      text: inquiry.statusText,
+                      color: inquiry.statusColor,
+                    ),
+                    _PriorityChip(
+                      text: inquiry.priorityText,
+                      color: inquiry.priorityColor,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              // Only show finalize button if user is chairperson
               if (canFinalize)
-                ElevatedButton(
-                  onPressed: () => _showFinalizeConfirmation(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF014323),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Finalize Inquiry',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: _FinalizeButton(
+                    onPressed: () => _showFinalizeConfirmation(context),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _badge(inquiry.statusText, inquiry.statusColor),
-              _badge(inquiry.priorityText, inquiry.priorityColor),
-              _badge(inquiry.inquiryType, const Color(0xFF014323)),
-            ],
+          
+          const SizedBox(height: 16),
+          
+          // 2. Main Title
+          Text(
+            inquiry.title,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+              height: 1.3,
+              letterSpacing: -0.5,
+            ),
           ),
-          if (inquiry.timeFrame.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Row(
+          
+          const SizedBox(height: 16),
+          
+          // 3. Metadata Grid
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
               children: [
-                Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 6),
-                Text(
-                  inquiry.timeFrame,
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 13,
+                _MetaRow(
+                  icon: Icons.category_outlined,
+                  label: "Type",
+                  value: inquiry.inquiryType,
+                ),
+                if (inquiry.timeFrame.isNotEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(height: 1, thickness: 0.5),
                   ),
+                  _MetaRow(
+                    icon: Icons.access_time_rounded,
+                    label: "Timeframe",
+                    value: inquiry.timeFrame,
+                  ),
+                ],
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(height: 1, thickness: 0.5),
+                ),
+                _MetaRow(
+                  icon: Icons.calendar_today_rounded,
+                  label: "Created",
+                  value: inquiry.formattedDate,
                 ),
               ],
             ),
-          ],
-          const SizedBox(height: 8),
-          Text(
-            inquiry.formattedDate,
-            style: TextStyle(color: Colors.grey[500], fontSize: 12),
           ),
         ],
       ),
@@ -105,30 +125,44 @@ class InquiryHeaderSection extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: AppTheme.surfaceColor,
+          elevation: 8,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
-            'Finalize Inquiry',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_circle_outline, color: AppTheme.primaryColor),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Finalize Inquiry',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
           ),
           content: const Text(
-            'Are you sure you want to finalize this inquiry? This action cannot be undone.',
-            style: TextStyle(fontSize: 15),
+            'Are you sure you want to finalize this inquiry?\n\nThis action will mark the inquiry as completed and cannot be undone.',
+            style: TextStyle(fontSize: 15, height: 1.5, color: AppTheme.textSecondary),
           ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w600,
-                ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.textSecondary,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -138,20 +172,17 @@ class InquiryHeaderSection extends StatelessWidget {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF014323),
+                backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                elevation: 0,
               ),
               child: const Text(
-                'Finalize',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                'Confirm Finalize',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -159,14 +190,64 @@ class InquiryHeaderSection extends StatelessWidget {
       },
     );
   }
+}
 
-  Widget _badge(String text, Color color) {
+class _StatusChip extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const _StatusChip({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text.toUpperCase(),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PriorityChip extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const _PriorityChip({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Text(
         text,
@@ -176,6 +257,88 @@ class InquiryHeaderSection extends StatelessWidget {
           fontSize: 11,
         ),
       ),
+    );
+  }
+}
+
+class _FinalizeButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _FinalizeButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Text(
+              "Finalize",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+            SizedBox(width: 6),
+            Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _MetaRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppTheme.textSecondary.withOpacity(0.7)),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: TextStyle(
+            color: AppTheme.textSecondary.withOpacity(0.8),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

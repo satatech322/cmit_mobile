@@ -1,5 +1,6 @@
 // lib/features/inquiries/view/inquiry_details_screen.dart
 import 'package:flutter/material.dart';
+import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
 import 'package:cmit/core/auth_service.dart';
@@ -8,7 +9,6 @@ import 'package:cmit/core/assign_to_me.dart';
 import 'package:cmit/core/global_refresh_event.dart';
 
 // Import section widgets
-import 'sections/inquiry_header_section.dart';
 import 'sections/inquiry_details_section.dart';
 import 'sections/inquiry_visits_section.dart';
 import 'sections/inquiry_annex_section.dart';
@@ -33,21 +33,14 @@ class InquiryDetailsScreen extends StatefulWidget {
   State<InquiryDetailsScreen> createState() => _InquiryDetailsScreenState();
 }
 
-class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
+class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with SingleTickerProviderStateMixin {
   late List<dynamic> documents = [];
   late List<dynamic> allVisits = [];
   late List<dynamic> allAnnexes = [];
-  String? _currentUserId; // Add this
+  String? _currentUserId;
 
-  // Local state inquiry model
   late AssignToMeModel _inquiry;
   StreamSubscription? _refreshSubscription;
-
-  // Track expansion state
-  bool _detailsExpanded = false;
-  bool _visitsExpanded = false;
-  bool _annexExpanded = false;
-  bool _documentsExpanded = false;
 
   AssignToMeModel get i => _inquiry;
 
@@ -58,12 +51,9 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
     allVisits = i.visits;
     documents = i.requiredDocuments;
     allAnnexes = i.annexes;
-    _loadCurrentUserId(); // Add this
+    _loadCurrentUserId();
     
-    // Subscribe to global refresh events
-    print("🔔 Subscribing to GlobalRefreshEvent in InquiryDetailsScreen");
     _refreshSubscription = GlobalRefreshEvent.instance.refreshStream.listen((_) {
-      print("📥 Received Global Refresh Event - Refreshing Inquiry Data...");
       _refreshData();
     });
   }
@@ -75,16 +65,12 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
   }
 
   Future<void> _refreshData() async {
-    // Fetch all assigned inquiries
     final result = await AssignToMe.getAssignedInquiries();
     
     if (result['success'] == true) {
       final List<AssignToMeModel> inquiries = result['inquiries'];
-      
       try {
-        // Find the current inquiry in the list
         final updatedInquiry = inquiries.firstWhere((inq) => inq.id == widget.inquiry.id);
-        
         if (mounted) {
           setState(() {
             _inquiry = updatedInquiry;
@@ -92,38 +78,34 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
             allAnnexes = _inquiry.annexes;
             documents = _inquiry.requiredDocuments;
           });
-          print("✅ Inquiry Data Refreshed Successfully!");
-          
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Data updated successfully'),
-              backgroundColor: Color(0xFF014323),
-              duration: Duration(seconds: 1),
+            SnackBar(
+              content: const Text('Data updated successfully'),
+              backgroundColor: AppTheme.primaryColor,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 1),
             ),
           );
         }
       } catch (e) {
-        print("⚠️ Current inquiry not found in the refreshed list.");
+        // Handle error
       }
     }
   }
 
-  /// ✅ Load current user ID from AuthService
   Future<void> _loadCurrentUserId() async {
     final userId = await AuthService.getCurrentUserId();
     setState(() {
       _currentUserId = userId;
     });
-    print("🔹 Loaded current user ID: $_currentUserId");
   }
 
+  // Navigation Logic mirrors
   void _addVisit() {
-    // Check permission
     if (!InquiryPermissions.canAddFieldVisit(i)) {
       _showPermissionError('Only chairperson can add field visits');
       return;
     }
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -156,10 +138,8 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
   }
 
   void _editFinding(Map<String, dynamic> visit, Map<String, dynamic> finding, int index) {
-    // Get the finding's user ID
     final String findingUserId = (finding['user_id'] ?? '').toString();
 
-    // Check permission with user-specific logic
     if (!InquiryPermissions.canEditFinding(
       i,
       findingUserId: findingUserId,
@@ -188,13 +168,11 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
   }
 
   void _navigateToFinalizeAllFindings() {
-    // Check permission
     if (!InquiryPermissions.canFinalizeFindings(i)) {
       _showPermissionError('Only chairperson can finalize findings');
       return;
     }
 
-    // Collect all findings from all visits
     List<Map<String, dynamic>> allFindings = [];
 
     for (var visit in allVisits) {
@@ -212,14 +190,14 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
         const SnackBar(
           content: Text('No findings available to finalize'),
           backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
-    // Create a combined visit object with all findings
     Map<String, dynamic> combinedVisit = {
-      'id': allVisits.first['id'], // Use first visit's ID
+      'id': allVisits.first['id'],
       'visit_date': 'All Visits',
       'visit_time': '',
       'officer': 'Multiple Officers',
@@ -278,12 +256,10 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
   }
 
   void _editAnnex(Map<String, dynamic> annex, int annexNumber) {
-    // Check permission
     if (!InquiryPermissions.canEditAnnex(i)) {
       _showPermissionError('Only chairperson can edit annexes');
       return;
     }
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Edit Annex #$annexNumber - Coming soon')),
     );
@@ -293,14 +269,12 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  // Get total number of findings across all visits
   int _getTotalFindings() {
     int total = 0;
     for (var visit in allVisits) {
@@ -310,52 +284,252 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
     }
     return total;
   }
+  
+  void _showFinalizeConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Finalize Inquiry'),
+          content: const Text(
+            'Are you sure you want to finalize this inquiry? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // Trigger finalize action logic here
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+              child: const Text('Finalize', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final isChairperson = i.isChairperson;
     final canFinalizeFindings = InquiryPermissions.canFinalizeFindings(i);
     final totalFindings = _getTotalFindings();
+    final canFinalizeInquiry = InquiryPermissions.canFinalizeInquiry(i);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: const BackButton(color: Color(0xFF1A1A1A)),
-        title: const Text(
-          'Inquiry Details',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
-          ),
+      backgroundColor: Colors.grey[50], // Soft background
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Header
+            _buildCustomHeader(isChairperson),
+            
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                children: [
+                
+                  // Hero Card (Summary)
+                  _buildHeroCard(canFinalizeInquiry),
+                  const SizedBox(height: 24),
+                  
+                  // Section Title: Details
+                  _buildSectionHeader("Overview", Icons.info_outline),
+                  _buildContentCard(
+                    child: InquiryDetailsSection(inquiry: i),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Section Title: Activity
+                  _buildSectionHeader("Field Visits", Icons.location_on_outlined),
+                  _buildContentCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                         InquiryVisitsSection(
+                            inquiry: i,
+                            visits: allVisits,
+                            onNavigateToFindings: _navigateToFindings,
+                            onEditFinding: _editFinding,
+                            onAddVisit: _addVisit,
+                            currentUserId: _currentUserId,
+                          ),
+                          // Add Visit Button (if visible) moved inside section for better UX? 
+                          // Or kept as floated. The section handles add buttons usually.
+                      ],
+                    ),
+                  ),
+
+                  // Finalize Findings Button (Contextual)
+                  if (canFinalizeFindings && totalFindings > 0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: ElevatedButton.icon(
+                        onPressed: _navigateToFinalizeAllFindings,
+                        icon: const Icon(Icons.check_circle_outline, size: 20),
+                        label: Text('Finalize All Findings ($totalFindings)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 2,
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 24),
+                  
+                  // Section Title: Resources
+                  _buildSectionHeader("Resources", Icons.folder_open_rounded),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Annex Card
+                      Expanded(
+                        child: _buildSmallSectionCard(
+                          title: "Annexes",
+                          count: allAnnexes.length,
+                          icon: Icons.attach_file_rounded,
+                          color: Colors.orange,
+                          onTap: () {
+                             showModalBottomSheet(
+                               context: context,
+                               isScrollControlled: true,
+                               backgroundColor: Colors.transparent,
+                               builder: (context) => Container(
+                                 height: MediaQuery.of(context).size.height * 0.8,
+                                 decoration: const BoxDecoration(
+                                   color: Colors.white,
+                                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                 ),
+                                 child: Column(
+                                   children: [
+                                     Padding(
+                                       padding: const EdgeInsets.all(16),
+                                       child: Text("Annexes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                     ),
+                                     Expanded(
+                                       child: InquiryAnnexSection(
+                                          inquiry: i,
+                                          annexes: allAnnexes,
+                                          onNavigateToAnnexDetails: _navigateToAnnexDetails,
+                                          onEditAnnex: _editAnnex,
+                                          onAnnexAdded: _refreshAnnexes,
+                                        ),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Documents Card
+                      Expanded(
+                        child: _buildSmallSectionCard(
+                          title: "Documents",
+                          count: documents.length,
+                          icon: Icons.description_rounded,
+                          color: Colors.blue,
+                          onTap: () {
+                             showModalBottomSheet(
+                               context: context,
+                               isScrollControlled: true,
+                               backgroundColor: Colors.transparent,
+                               builder: (context) => Container(
+                                 height: MediaQuery.of(context).size.height * 0.8,
+                                 decoration: const BoxDecoration(
+                                   color: Colors.white,
+                                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                 ),
+                                 child: Column(
+                                   children: [
+                                     Padding(
+                                       padding: const EdgeInsets.all(16),
+                                       child: Text("Documents", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                     ),
+                                     Expanded(
+                                       child: InquiryDocumentsSection(
+                                          initialDocuments: documents,
+                                          inquiryId: i.id,
+                                          onDocumentsChanged: (updatedDocs) {
+                                            setState(() => documents = updatedDocs);
+                                          },
+                                        ),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ],
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: const Color(0xFFE5E5E5),
-            height: 1,
+      ),
+    );
+  }
+
+  Widget _buildCustomHeader(bool isChairperson) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      color: Colors.white,
+      child: Row(
+        children: [
+          // Back Button
+          InkWell(
+            onTap: () => Navigator.pop(context),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
+            ),
           ),
-        ),
-        actions: [
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Text(
+              "Inquiry Details",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+          ),
           if (isChairperson)
             Container(
-              margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: AppTheme.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF014323).withOpacity(0.3)),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.star, size: 14, color: Color(0xFF014323)),
+              child: Row(
+                children: const [
+                  Icon(Icons.star_rounded, size: 14, color: AppTheme.primaryColor),
                   SizedBox(width: 4),
                   Text(
                     'Chairperson',
                     style: TextStyle(
-                      color: Color(0xFF014323),
+                      color: AppTheme.primaryColor,
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
@@ -365,166 +539,199 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header Section with Finalize button (only for chairperson)
-            InquiryHeaderSection(inquiry: i),
-
-            const SizedBox(height: 8),
-
-            // Details Section
-            _buildCollapsibleSection(
-              title: 'Details',
-              icon: Icons.info_outline,
-              isExpanded: _detailsExpanded,
-              onToggle: () => setState(() => _detailsExpanded = !_detailsExpanded),
-              child: InquiryDetailsSection(inquiry: i),
-            ),
-
-            // Field Visits Section
-            _buildCollapsibleSection(
-              title: 'Field Visits',
-              icon: Icons.location_on,
-              count: allVisits.length,
-              isExpanded: _visitsExpanded,
-              onToggle: () => setState(() => _visitsExpanded = !_visitsExpanded),
-              child: InquiryVisitsSection(
-                inquiry: i,
-                visits: allVisits,
-                onNavigateToFindings: _navigateToFindings,
-                onEditFinding: _editFinding,
-                onAddVisit: _addVisit,
-                currentUserId: _currentUserId, // Pass the current user ID
-              ),
-            ),
-
-            // Centralized Finalize All Findings Button
-            if (canFinalizeFindings && totalFindings > 0)
+    );
+  }
+  
+  Widget _buildHeroCard(bool canFinalize) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+           BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Status info
+          Row(
+            children: [
               Container(
-                margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _navigateToFinalizeAllFindings,
-                  icon: const Icon(Icons.check_circle_outline, size: 20),
-                  label: Text('Finalize All Findings ($totalFindings)'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF014323),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: i.statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.assignment_rounded, color: i.statusColor, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      i.formattedDate,
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500),
                     ),
-                  ),
+                    const SizedBox(height: 2),
+                    Text(
+                      i.title,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-
-            const SizedBox(height: 8),
-
-            // Annex Section
-            _buildCollapsibleSection(
-              title: 'Annex',
-              icon: Icons.folder_special,
-              count: allAnnexes.length,
-              isExpanded: _annexExpanded,
-              onToggle: () => setState(() => _annexExpanded = !_annexExpanded),
-              child: InquiryAnnexSection(
-                inquiry: i,
-                annexes: allAnnexes,
-                onNavigateToAnnexDetails: _navigateToAnnexDetails,
-                onEditAnnex: _editAnnex,
-                onAnnexAdded: _refreshAnnexes,
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Badges
+          Wrap(
+            spacing: 8,
+            children: [
+               _buildBadge(i.statusText, i.statusColor),
+               _buildBadge(i.priorityText, i.priorityColor),
+               if (i.timeFrame.isNotEmpty)
+                _buildBadge(i.timeFrame, Colors.teal),
+            ],
+          ),
+          
+          if (canFinalize) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _showFinalizeConfirmation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: const Text("Finalize Inquiry", style: TextStyle(fontWeight: FontWeight.w600)),
               ),
             ),
-
-            // Documents Section
-            _buildCollapsibleSection(
-              title: 'Documents',
-              icon: Icons.description_outlined,
-              count: documents.length,
-              isExpanded: _documentsExpanded,
-              onToggle: () => setState(() => _documentsExpanded = !_documentsExpanded),
-              child: InquiryDocumentsSection(
-                initialDocuments: documents,
-                inquiryId: i.id,
-                onDocumentsChanged: (updatedDocs) {
-                  setState(() {
-                    documents = updatedDocs;
-                  });
-                },
-              ),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.grey.shade600),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade800,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildContentCard({required Widget child, EdgeInsetsGeometry? padding}) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+         border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+           BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
 
-            const SizedBox(height: 16),
+  Widget _buildSmallSectionCard({
+      required String title, 
+      required int count, 
+      required IconData icon, 
+      required Color color,
+      required VoidCallback onTap,
+    }) {
+    return InkWell(
+      onTap: onTap,
+       borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "$count",
+               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+            ),
+            Text(
+              title,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCollapsibleSection({
-    required String title,
-    required IconData icon,
-    int? count,
-    required bool isExpanded,
-    required VoidCallback onToggle,
-    VoidCallback? onAdd,
-    required Widget child,
-  }) {
+  Widget _buildBadge(String text, Color color) {
     return Container(
-      margin: const EdgeInsets.only(top: 8),
-      color: Colors.white,
-      child: Column(
-        children: [
-          InkWell(
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Icon(icon, size: 20, color: const Color(0xFF014323)),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  if (count != null && count > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$count',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF014323),
-                        ),
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.grey[600],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isExpanded) ...[
-            const Divider(height: 1),
-            child,
-          ],
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
       ),
     );
   }

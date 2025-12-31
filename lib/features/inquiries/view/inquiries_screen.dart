@@ -1,5 +1,6 @@
 // lib/features/inquiries/view/inquiries_screen.dart - WITH OFFLINE NAVIGATION
 import 'package:flutter/material.dart';
+import 'package:cmit/config/theme.dart';
 import 'package:cmit/core/assign_to_me.dart';
 import 'package:cmit/features/inquiries/view/inquiry_card.dart';
 import 'package:cmit/features/inquiries/view/inquiry_details_screen.dart';
@@ -8,7 +9,7 @@ import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/services/inquiry_cache_service.dart';
 import 'package:cmit/features/offline/widgets/offline_indicator.dart';
 import 'package:cmit/features/offline/view/offline_details_screen.dart';
-import 'package:cmit/features/offline/view/offline_inquiry_detail_screen.dart'; // ADD THIS IMPORT
+import 'package:cmit/features/offline/view/offline_inquiry_detail_screen.dart';
 
 class InquiriesScreen extends StatefulWidget {
   const InquiriesScreen({super.key});
@@ -101,8 +102,6 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
           _filtered = List.from(_inquiries);
           _error = '';
         });
-
-        // No snackbar popup - info shown in banner
       } else {
         // No cache available
         setState(() {
@@ -124,7 +123,7 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
     }
   }
 
-  /// Show cache information dialog (only when user taps info icon)
+  /// Show cache information dialog
   Future<void> _showCacheInfo() async {
     if (!mounted) return;
 
@@ -149,9 +148,9 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Color(0xFF014323), size: 24),
+          title: Row(
+            children: const [
+              Icon(Icons.info_outline, color: AppTheme.primaryColor, size: 24),
               SizedBox(width: 12),
               Text('Cache Information'),
             ],
@@ -160,30 +159,18 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                message,
-                style: const TextStyle(fontSize: 15),
-              ),
+              Text(message, style: const TextStyle(fontSize: 15)),
               const SizedBox(height: 12),
               Text(
                 'You are viewing offline data. Connect to internet to get the latest updates.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'OK',
-                style: TextStyle(
-                  color: Color(0xFF014323),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: const Text('OK', style: TextStyle(color: AppTheme.primaryColor)),
             ),
           ],
         ),
@@ -205,11 +192,10 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No internet connection. Showing cached data.'),
-          backgroundColor: Color(0xFF014323),
+        SnackBar(
+          content: const Text('No internet connection. Showing cached data.'),
+          backgroundColor: AppTheme.primaryColor,
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
         ),
       );
     }
@@ -229,35 +215,26 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
     });
   }
 
-  /// Navigate to offline details when offline banner is tapped
   void _navigateToOfflineDetails() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const OfflineDetailsScreen(),
-      ),
-    ).then((_) {
-      // Refresh data after returning
-      _checkConnectivityAndLoad();
-    });
+      MaterialPageRoute(builder: (_) => const OfflineDetailsScreen()),
+    ).then((_) => _checkConnectivityAndLoad());
   }
 
-  /// Navigate to inquiry details - UPDATED TO CHECK ONLINE STATUS
   Future<void> _navigateToInquiryDetails(AssignToMeModel inquiry) async {
     final hasInternet = await OfflineService.hasInternet();
-
     if (!mounted) return;
 
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => hasInternet
-            ? InquiryDetailsScreen(inquiry: inquiry) // Online: regular screen
-            : OfflineInquiryDetailsScreen(inquiry: inquiry), // Offline: read-only screen
+            ? InquiryDetailsScreen(inquiry: inquiry)
+            : OfflineInquiryDetailsScreen(inquiry: inquiry),
       ),
     );
 
-    // Refresh if changes were made (only possible when online)
     if (result == true) {
       _loadInquiries();
     }
@@ -266,258 +243,253 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text(
-          'My Inquiries',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [
-          // Show cache indicator
-          if (_isFromCache)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.info_outline,
-                  color: Color(0xFF014323),
-                  size: 22,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Header
+            _buildCustomHeader(),
+            
+            // Offline Indicator
+            const OfflineIndicator(),
+        
+            if (!_isOnline && _isFromCache)
+              InkWell(
+                onTap: _navigateToOfflineDetails,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  color: AppTheme.secondaryColor.withOpacity(0.1),
+                  child: Row(
+                    children: [
+                      Icon(Icons.cloud_off, size: 18, color: AppTheme.secondaryColor),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Offline Mode',
+                              style: TextStyle(
+                                fontSize: 13, 
+                                color: AppTheme.secondaryColor, 
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Viewing cached data. Tap for details.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.secondaryColor.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, size: 20, color: AppTheme.secondaryColor),
+                    ],
+                  ),
                 ),
-                onPressed: _showCacheInfo,
-                tooltip: 'Cache Info',
+              ),
+            
+            // Main Content Area
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _loadInquiries,
+                color: AppTheme.primaryColor,
+                backgroundColor: Colors.white,
+                child: Column(
+                  children: [
+                    // Search Bar Section
+                     Padding(
+                       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                       child: _buildPremiumSearchBar(),
+                     ),
+                    
+                    // List
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                          : _error.isNotEmpty
+                            ? _buildErrorState()
+                            : _filtered.isEmpty
+                              ? _buildEmptyState()
+                              : ListView.builder(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  itemCount: _filtered.length,
+                                  itemBuilder: (context, i) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 16),
+                                      child: InquiryCard(
+                                        inquiry: _filtered[i],
+                                        onTap: () => _navigateToInquiryDetails(_filtered[i]),
+                                      ),
+                                    );
+                                  },
+                                ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          // Offline settings button
-          IconButton(
-            icon: const Icon(
-              Icons.settings_outlined,
-              color: Color(0xFF014323),
-              size: 22,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const OfflineDetailsScreen(),
-                ),
-              ).then((_) {
-                // Reload after returning
-                _checkConnectivityAndLoad();
-              });
-            },
-            tooltip: 'Offline & Sync',
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: const Color(0xFFE5E5E5),
-            height: 1,
-          ),
+          ],
         ),
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildCustomHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      color: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Offline Indicator (for pending syncs)
-          const OfflineIndicator(),
-
-          // Offline Mode Banner - NOW TAPPABLE
-          if (!_isOnline && _isFromCache)
-            InkWell(
-              onTap: _navigateToOfflineDetails,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                color: const Color(0xFFFFF3E0),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.cloud_off,
-                      size: 18,
-                      color: Color(0xFFFF9800),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Offline Mode',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFFFF9800),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Viewing cached data. Tap for details.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: const Color(0xFFFF9800).withOpacity(0.8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: Color(0xFFFF9800),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // Search Bar
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE0E0E0)),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(fontSize: 15),
-                decoration: const InputDecoration(
-                  hintText: 'Search by title, department, or person...',
-                  hintStyle: TextStyle(
-                    color: Color(0xFF9E9E9E),
-                    fontSize: 14,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Color(0xFF014323),
-                    size: 22,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                ),
-              ),
+          const Text(
+            "My Inquiries",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+              letterSpacing: -0.5,
             ),
           ),
-
-          // Content Area
-          Expanded(
-            child: _isLoading
-                ? const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: Color(0xFF014323),
-              ),
-            )
-                : _error.isNotEmpty
-                ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _isOnline
-                          ? Icons.error_outline
-                          : Icons.cloud_off_outlined,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _error,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _loadInquiries,
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: Text(_isOnline ? 'Retry' : 'Try Again'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF014323),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ],
+          
+          Row(
+            children: [
+              if (_isFromCache)
+                _buildHeaderInfoButton(
+                  Icons.info_outline,
+                  AppTheme.primaryColor,
+                  _showCacheInfo,
                 ),
-              ),
-            )
-                : _filtered.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.inbox_outlined,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _searchController.text.isEmpty
-                        ? 'No inquiries assigned'
-                        : 'No inquiries found',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (_searchController.text.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        'Try a different search term',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            )
-                : RefreshIndicator(
-              onRefresh: _loadInquiries,
-              color: const Color(0xFF014323),
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: _filtered.length,
-                separatorBuilder: (context, index) =>
-                const SizedBox(height: 12),
-                itemBuilder: (context, i) {
-                  final inquiry = _filtered[i];
-                  return InquiryCard(
-                    inquiry: inquiry,
-                    onTap: () => _navigateToInquiryDetails(inquiry), // UPDATED
-                  );
+              const SizedBox(width: 8),
+              _buildHeaderActionButton(
+                Icons.tune_rounded,
+                Colors.black87,
+                () {
+                   // Filter or Settings action
+                   Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const OfflineDetailsScreen()),
+                  ).then((_) => _checkConnectivityAndLoad());
                 },
               ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderActionButton(IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF014323), Color(0xFF0F5132)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF014323).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
+          ],
+        ),
+        child: Icon(icon, color: Colors.white, size: 24),
+      ),
+    );
+  }
+
+    Widget _buildHeaderInfoButton(IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: color, size: 24),
+      ),
+    );
+  }
+
+  Widget _buildPremiumSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: "Search inquiries...",
+          hintStyle: TextStyle(
+            color: Colors.grey.shade400,
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+          ),
+          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 22),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          isDense: true,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _isOnline ? Icons.error_outline : Icons.cloud_off_rounded,
+              size: 64,
+              color: Colors.grey[300],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error,
+              style: TextStyle(color: AppTheme.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadInquiries,
+              child: Text(_isOnline ? 'Retry' : 'Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            _searchController.text.isEmpty ? 'No inquiries assigned' : 'No inquiries found',
+            style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
           ),
         ],
       ),

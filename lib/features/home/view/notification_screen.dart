@@ -3,88 +3,64 @@ import 'package:flutter/material.dart';
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
-  final List<Map<String, String>> notifications = const [
-    {
-      "title": "New Comment",
-      "message": "A new Comment has been added to the inquiry.",
-      "time": "1m ago",
-      "avatar": "assets/images/home/arslan.jpg"
-    },
-    {
-      "title": "Inquiry Updated",
-      "message": "The Status of the inquiry 'Environment Audit Was Changed'",
-      "time": "1m ago",
-      "avatar": "assets/images/home/arslan.jpg"
-    },
-    {
-      "title": "New Comment",
-      "message": "A new Comment has been added to the inquiry.",
-      "time": "1m ago",
-      "avatar": "assets/images/home/arslan.jpg"
-    },
-    {
-      "title": "Inquiry Updated",
-      "message": "The Status of the inquiry 'Environment Audit Was Changed'",
-      "time": "1m ago",
-      "avatar": "assets/images/home/arslan.jpg"
-    },
-    {
-      "title": "New Comment",
-      "message": "A new Comment has been added to the inquiry.",
-      "time": "1m ago",
-      "avatar": "assets/images/home/arslan.jpg"
-    },
-    {
-      "title": "Inquiry Updated",
-      "message": "The Status of the inquiry 'Environment Audit Was Changed'",
-      "time": "1m ago",
-      "avatar": "assets/images/home/arslan.jpg"
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Notification",
+          "Notifications",
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         ),
         centerTitle: true,
       ),
-      body: ListView.builder(
-        itemCount: notifications.length,
-        itemBuilder: (context, index) {
-          final item = notifications[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: AssetImage(item["avatar"]!),
-              radius: 24,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.notifications_none_rounded,
+                size: 64,
+                color: Colors.grey.shade300,
+              ),
             ),
-            title: Text(
-              item["title"]!,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            const SizedBox(height: 24),
+            const Text(
+              "IN PROGRESS",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+                letterSpacing: 1.2,
+              ),
             ),
-            subtitle: Text(
-              item["message"]!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 8),
+            Text(
+              "We are working on this feature",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            trailing: Text(
-              item["time"]!,
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

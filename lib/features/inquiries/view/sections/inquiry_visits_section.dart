@@ -1,5 +1,6 @@
 // lib/features/inquiries/view/sections/inquiry_visits_section.dart
 import 'package:flutter/material.dart';
+import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
 
@@ -26,15 +27,12 @@ class InquiryVisitsSection extends StatefulWidget {
 }
 
 class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
-  Map<int, bool> _visitExpansionState = {};
+  final Map<int, bool> _visitExpansionState = {};
   static const String baseUrl = 'https://cmit.sata.pk';
 
   @override
   void initState() {
     super.initState();
-    for (int i = 0; i < widget.visits.length; i++) {
-      _visitExpansionState[i] = false;
-    }
   }
 
   String _getFullUrl(String? path) {
@@ -42,13 +40,10 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
-
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-
     if (cleanPath.startsWith('storage/')) {
       return '$baseUrl/$cleanPath';
     }
-
     return '$baseUrl/storage/$cleanPath';
   }
 
@@ -56,221 +51,68 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
   Widget build(BuildContext context) {
     final bool canAddVisit = InquiryPermissions.canAddFieldVisit(widget.inquiry);
 
-    // Debug print to check currentUserId
-    print("🔹 InquiryVisitsSection - currentUserId: '${widget.currentUserId}'");
-
-    // Show loading indicator if currentUserId is not yet loaded
+    // Loading State
     if (widget.currentUserId == null && !widget.inquiry.isChairperson) {
       return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator()),
+        padding: EdgeInsets.all(24),
+        child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
       );
     }
 
+    // Empty State
+    if (widget.visits.isEmpty) {
+        return Column(
+          children: [
+            _emptyState('No field visits recorded yet'),
+             if (canAddVisit)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: ElevatedButton.icon(
+                      onPressed: widget.onAddVisit,
+                      icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+                      label: const Text('Add First Visit'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                ),
+          ],
+        );
+    }
+
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          if (widget.visits.isEmpty)
-            _emptyState('No field visits recorded yet')
-          else
-            ...widget.visits.asMap().entries.map((entry) {
-              final int visitNumber = entry.key + 1;
-              final visit = entry.value as Map<String, dynamic>;
-              return _visitCard(visit, visitNumber);
-            }).toList(),
-
-          const SizedBox(height: 12),
-
-          if (canAddVisit)
-            Center(
+          // Timeline
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: widget.visits.length,
+            itemBuilder: (context, index) {
+              final visit = widget.visits[index] as Map<String, dynamic>;
+              final isLast = index == widget.visits.length - 1;
+              return _buildTimelineItem(visit, index + 1, isLast);
+            },
+          ),
+          
+          if (canAddVisit) ...[
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
               child: OutlinedButton.icon(
                 onPressed: widget.onAddVisit,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Field Visit'),
+                label: const Text('Add Another Visit'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF014323),
-                  side: const BorderSide(color: Color(0xFF014323)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _visitCard(Map<String, dynamic> visit, int visitNumber) {
-    final findingsList = (visit['findings'] as List<dynamic>? ?? [])
-        .cast<Map<String, dynamic>>();
-
-    final String dateStr = (visit['visit_date'] ?? '').toString();
-    final String formattedDate = _formatVisitDate(dateStr);
-    final bool isExpanded = _visitExpansionState[visitNumber - 1] ?? false;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                _visitExpansionState[visitNumber - 1] = !isExpanded;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(12),
-                  topRight: const Radius.circular(12),
-                  bottomLeft: isExpanded ? Radius.zero : const Radius.circular(12),
-                  bottomRight: isExpanded ? Radius.zero : const Radius.circular(12),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF014323),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Visit $visitNumber',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(Icons.calendar_today, size: 13, color: Colors.grey[700]),
-                  const SizedBox(width: 4),
-                  Text(
-                    formattedDate,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                      color: Color(0xFF424242),
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: const Color(0xFF014323),
-                    size: 24,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isExpanded) ...[
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, size: 14, color: Colors.grey[700]),
-                      const SizedBox(width: 6),
-                      Text(
-                        (visit['visit_time'] ?? '').toString(),
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _visitInfo('Officer', (visit['officer'] ?? '').toString()),
-                  const SizedBox(height: 6),
-                  _visitInfo('Driver', (visit['driver'] ?? '').toString()),
-                  const SizedBox(height: 6),
-                  _visitInfo('Vehicle', (visit['vehicle'] ?? '').toString()),
-                ],
-              ),
-            ),
-            if (findingsList.isNotEmpty) ...[
-              Divider(height: 1, color: Colors.grey[300]),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Findings (${findingsList.length})',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...findingsList.asMap().entries.map((entry) {
-                      final int index = entry.key + 1;
-                      final Map<String, dynamic> finding = entry.value;
-
-                      // Get finding's user ID
-                      final String findingUserId = (finding['user_id'] ?? '').toString();
-
-                      print("📝 Finding #$index - User ID: '$findingUserId', Current User: '${widget.currentUserId}'");
-
-                      // Check if current user can edit this specific finding
-                      final bool canEdit = InquiryPermissions.canEditFinding(
-                        widget.inquiry,
-                        findingUserId: findingUserId,
-                        currentUserId: widget.currentUserId,
-                      );
-
-                      print("🔑 Finding #$index - canEdit result: $canEdit");
-
-                      return _findingItem(
-                        user: (finding['user'] ?? 'Unknown').toString(),
-                        findingsText: (finding['findings'] ?? '').toString(),
-                        attachments: finding['attachments'] as List<dynamic>? ?? [],
-                        number: index,
-                        canEdit: canEdit,
-                        onEdit: () => widget.onEditFinding(visit, finding, index),
-                      );
-                    }).toList(),
-                  ],
-                ),
-              ),
-            ],
-            Divider(height: 1, color: Colors.grey[300]),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => widget.onNavigateToFindings(visit),
-                  icon: const Icon(Icons.assignment, size: 18),
-                  label: const Text('Findings/Proceedings/Recommendations'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF014323),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                  foregroundColor: AppTheme.primaryColor,
+                  side: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
@@ -280,418 +122,443 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
     );
   }
 
-  Widget _visitInfo(String label, String value) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 60,
-          child: Text(
-            '$label:',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[600],
+  Widget _buildTimelineItem(Map<String, dynamic> visit, int visitNumber, bool isLast) {
+    final bool isExpanded = _visitExpansionState[visitNumber] ?? false;
+    final String dateStr = (visit['visit_date'] ?? '').toString();
+    final String formattedDate = _formatVisitDate(dateStr);
+    final String timeStr = (visit['visit_time'] ?? '').toString();
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Left Timeline strip
+          SizedBox(
+            width: 50,
+            child: Column(
+             children: [
+               Container(
+                 width: 36,
+                 height: 36,
+                 decoration: BoxDecoration(
+                   color: AppTheme.primaryColor.withOpacity(0.1),
+                   shape: BoxShape.circle,
+                   border: Border.all(color: AppTheme.primaryColor, width: 1.5),
+                 ),
+                 child: Center(
+                   child: Text(
+                     "$visitNumber",
+                     style: const TextStyle(
+                       color: AppTheme.primaryColor,
+                       fontWeight: FontWeight.bold,
+                       fontSize: 14,
+                     ),
+                   ),
+                 ),
+               ),
+               if (!isLast)
+                 Expanded(
+                   child: Container(
+                     width: 2,
+                     color: Colors.grey.shade200,
+                     margin: const EdgeInsets.symmetric(vertical: 4),
+                   ),
+                 ),
+             ], 
             ),
           ),
-        ),
+          
+          const SizedBox(width: 12),
+          
+          // Right Content Card
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isExpanded ? 0.05 : 0.02),
+                      blurRadius: isExpanded ? 12 : 6,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Card Header (Always Visible)
+                    InkWell(
+                      onTap: () {
+                         setState(() {
+                           _visitExpansionState[visitNumber] = !isExpanded;
+                         });
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.calendar_today_rounded, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      formattedDate,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                                    ),
+                                  ],
+                                ),
+                                if (timeStr.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    timeStr,
+                                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                                  ),
+                                ]
+                              ],
+                            ),
+                            const Spacer(),
+                            Icon(
+                              isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                              color: Colors.grey.shade400,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    // Expanded Details
+                    if (isExpanded) ...[
+                      const Divider(height: 1, indent: 16, endIndent: 16),
+                      Padding(
+                         padding: const EdgeInsets.all(16),
+                         child: Column(
+                           children: [
+                             _buildDetailRow(Icons.person_outline, "Officer", visit['officer']),
+                             const SizedBox(height: 12),
+                             _buildDetailRow(Icons.drive_eta_outlined, "Driver", visit['driver']),
+                             const SizedBox(height: 12),
+                             _buildDetailRow(Icons.directions_car_outlined, "Vehicle", visit['vehicle']),
+                           ],
+                         ),
+                      ),
+                      
+                      // Findings Section
+                      _buildFindingsSection(visit, visitNumber),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildDetailRow(IconData icon, String label, dynamic value) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey.shade400),
+        const SizedBox(width: 12),
+        Text("$label:", style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
-            value.isNotEmpty ? value : 'N/A',
-            style: const TextStyle(fontSize: 13),
+            (value ?? 'N/A').toString(),
+            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500, fontSize: 13),
           ),
         ),
       ],
     );
   }
+  
+  Widget _buildFindingsSection(Map<String, dynamic> visit, int visitNumber) {
+     final findingsList = (visit['findings'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+     
+     return Container(
+       decoration: BoxDecoration(
+         color: Colors.grey.shade50,
+         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+       ),
+       padding: const EdgeInsets.all(16),
+       child: Column(
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+           Row(
+             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               Text(
+                 "Findings (${findingsList.length})",
+                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimary),
+               ),
+               TextButton(
+                 onPressed: () => widget.onNavigateToFindings(visit),
+                 style: TextButton.styleFrom(
+                   padding: EdgeInsets.zero,
+                   minimumSize: Size.zero,
+                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                   foregroundColor: AppTheme.primaryColor
+                 ),
+                 child: const Text("Manage", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+               ),
+             ],
+           ),
+           const SizedBox(height: 12),
+           
+           if (findingsList.isEmpty)
+             const Text("No findings recorded yet.", style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic))
+           else
+            ...findingsList.asMap().entries.map((entry) {
+                final index = entry.key + 1;
+                final finding = entry.value;
+                return _buildFindingSummaryItem(finding, index, visit);
+            }).toList(),
+         ],
+       ),
+     );
+  }
+  
+  Widget _buildFindingSummaryItem(Map<String, dynamic> finding, int index, Map<String, dynamic> visit) {
+      final List attachments = finding['attachments'] as List<dynamic>? ?? [];
+      final String findingUserId = (finding['user_id'] ?? '').toString();
+      final String userName = (finding['user'] ?? 'Unknown').toString();
+      final bool canEdit = InquiryPermissions.canEditFinding(
+                        widget.inquiry,
+                        findingUserId: findingUserId,
+                        currentUserId: widget.currentUserId,
+       );
 
-  Widget _findingItem({
-    required String user,
-    required String findingsText,
-    required List<dynamic> attachments,
-    required int number,
-    required bool canEdit,
-    required VoidCallback onEdit,
-  }) {
-    final int attachmentCount = attachments.length;
-
-    // Debug print to verify canEdit value in UI
-    print("🎨 UI Render - Finding #$number canEdit: $canEdit");
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      return InkWell(
+        onTap: () => _showFindingDetails(finding, index, visit, canEdit),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF014323),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '#$number',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
+               Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                 decoration: BoxDecoration(
+                   color: Colors.grey.shade100,
+                   borderRadius: BorderRadius.circular(4),
+                 ),
+                 child: Text("#$index", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+               ),
+               const SizedBox(width: 12),
+               Expanded(
+                 child: Text(
+                   userName,
+                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87),
+                   maxLines: 1, overflow: TextOverflow.ellipsis,
+                 ),
+               ),
+               if (attachments.isNotEmpty) ...[
+                  Icon(Icons.attachment, size: 14, color: Colors.grey.shade500),
+                  const SizedBox(width: 4),
+                  Text(
+                    "${attachments.length}",
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  user,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              // Only show edit button when canEdit is true
-              if (canEdit)
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 16, color: Color(0xFF014323)),
-                  onPressed: onEdit,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: 'Edit Finding',
-                ),
+                  const SizedBox(width: 12),
+               ],
+               Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
             ],
           ),
-          if (findingsText.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              findingsText,
-              style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
+      );
+  }
+
+  void _showFindingDetails(Map<String, dynamic> finding, int index, Map<String, dynamic> visit, bool canEdit) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Handle Bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-          ],
-          if (attachmentCount > 0) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(Icons.attachment, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  'Attachments ($attachmentCount)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[700],
+            
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                           "Finding #$index",
+                           style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          (finding['user'] ?? 'Unknown').toString(),
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                          textAlign: TextAlign.left,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+                      child: const Icon(Icons.close, size: 20),
+                    ),
+                    color: Colors.black87,
+                  ),
+                ],
+              ),
+            ),
+            
+            const Divider(height: 1),
+            
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      (finding['findings'] ?? 'No details available').toString(),
+                      style: const TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
+                      textAlign: TextAlign.left,
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    if ((finding['attachments'] as List?)?.isNotEmpty ?? false) ...[
+                      const Text(
+                        "Attachments", 
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                        textAlign: TextAlign.left,
+                      ),
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: _buildAttachmentsPreview(finding['attachments'] as List),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            
+            // Footer Action
+            if (canEdit) 
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onEditFinding(visit, finding, index);
+                      },
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      label: const Text("Edit Finding Record"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                    ),
                   ),
                 ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => _viewAllAttachments(attachments, user, number),
-                  icon: const Icon(Icons.visibility, size: 14),
-                  label: Text(
-                    attachmentCount > 1 ? 'View All' : 'View',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF014323),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildAttachmentsPreview(attachments),
+              ),
           ],
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildAttachmentsPreview(List<dynamic> attachments) {
-    final displayCount = attachments.length > 3 ? 3 : attachments.length;
-    final remaining = attachments.length - displayCount;
-
-    return Row(
-      children: [
-        ...attachments.take(displayCount).map((attachment) {
-          if (attachment is! Map<String, dynamic>) return const SizedBox.shrink();
-
-          final String fileType = (attachment['file_type'] ?? '').toString();
-          final String link = (attachment['link'] ?? '').toString();
-          final fullUrl = _getFullUrl(link);
-
-          return _buildAttachmentThumbnail(
-            fileType: fileType,
-            link: fullUrl,
-            onTap: () => _openAttachment(fullUrl, fileType, 'Attachment'),
-          );
-        }).toList(),
-        if (remaining > 0)
-          Container(
-            margin: const EdgeInsets.only(right: 6),
-            width: 60,
-            height: 60,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: attachments.map((attachment) {
+        if (attachment is! Map<String, dynamic>) return const SizedBox.shrink();
+        final String link = (attachment['link'] ?? '').toString();
+        final fullUrl = _getFullUrl(link);
+        return InkWell(
+          onTap: () => _openAttachment(fullUrl, 'Attachment'),
+          child: Container(
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFF014323).withOpacity(0.1),
+              color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF014323).withOpacity(0.3)),
+              border: Border.all(color: Colors.grey.shade300),
+              image: (link.endsWith('.jpg') || link.endsWith('.png') || link.endsWith('.jpeg')) ?
+                   DecorationImage(image: NetworkImage(fullUrl), fit: BoxFit.cover) : null,
             ),
-            child: Center(
-              child: Text(
-                '+$remaining',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF014323),
-                ),
-              ),
-            ),
+            child: (link.endsWith('.jpg') || link.endsWith('.png') || link.endsWith('.jpeg')) 
+                ? null 
+                : const Center(child: Icon(Icons.insert_drive_file, color: Colors.grey)),
           ),
-      ],
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildAttachmentThumbnail({
-    required String fileType,
-    required String link,
-    required VoidCallback onTap,
-  }) {
-    final bool isImage = fileType.toLowerCase().contains('image') ||
-        fileType.toLowerCase().contains('jpeg') ||
-        fileType.toLowerCase().contains('jpg') ||
-        fileType.toLowerCase().contains('png') ||
-        link.toLowerCase().endsWith('.jpg') ||
-        link.toLowerCase().endsWith('.jpeg') ||
-        link.toLowerCase().endsWith('.png');
-
-    return Container(
-      margin: const EdgeInsets.only(right: 6),
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE0E0E0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: isImage
-                ? Image.network(
-              link,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildFileIcon(Icons.broken_image, Colors.red);
-              },
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                        : null,
-                    strokeWidth: 2,
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFF014323)),
-                  ),
-                );
-              },
-            )
-                : _buildFileIcon(Icons.insert_drive_file, const Color(0xFF014323)),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFileIcon(IconData icon, Color color) {
-    return Center(
-      child: Icon(icon, size: 28, color: color),
-    );
-  }
-
-  void _viewAllAttachments(List<dynamic> attachments, String user, int findingNumber) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Finding #$findingNumber - $user',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A1A1A),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${attachments.length} ${attachments.length == 1 ? 'attachment' : 'attachments'}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                      color: Colors.grey[600],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Divider(height: 1),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: attachments.length,
-                    itemBuilder: (context, index) {
-                      final attachment = attachments[index] as Map<String, dynamic>;
-                      return _buildAttachmentListItem(attachment, index);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAttachmentListItem(Map<String, dynamic> attachment, int index) {
-    final fileType = attachment['file_type']?.toString() ?? '';
-    final link = attachment['link']?.toString() ?? '';
-    final fullUrl = _getFullUrl(link);
-
-    IconData icon;
-    Color iconColor;
-
-    if (fileType.contains('image') ||
-        link.toLowerCase().endsWith('.jpg') ||
-        link.toLowerCase().endsWith('.jpeg') ||
-        link.toLowerCase().endsWith('.png')) {
-      icon = Icons.image;
-      iconColor = Colors.blue[700]!;
-    } else if (fileType.contains('pdf') || link.toLowerCase().endsWith('.pdf')) {
-      icon = Icons.picture_as_pdf;
-      iconColor = Colors.red[700]!;
-    } else {
-      icon = Icons.insert_drive_file;
-      iconColor = Colors.grey[700]!;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: iconColor, size: 24),
-        ),
-        title: Text(
-          'Attachment ${index + 1}',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
-        subtitle: Text(
-          fileType.isNotEmpty ? fileType : 'File',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-        trailing: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _openAttachment(fullUrl, fileType, 'Attachment ${index + 1}');
-          },
-          icon: const Icon(Icons.open_in_new),
-          color: const Color(0xFF014323),
-          tooltip: 'Open',
-        ),
-      ),
-    );
-  }
-
-  void _openAttachment(String url, String fileType, String title) {
-    if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Attachment URL not available'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (fileType.contains('image') ||
-        url.toLowerCase().endsWith('.jpg') ||
-        url.toLowerCase().endsWith('.jpeg') ||
-        url.toLowerCase().endsWith('.png')) {
+  void _openAttachment(String url, String title) {
+     if (url.isEmpty) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => FindingImageViewer(
-            imageUrl: url,
-            title: title,
-          ),
+          builder: (context) => FindingImageViewer(imageUrl: url, title: title),
         ),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Opening: $title'),
-          backgroundColor: const Color(0xFF014323),
-        ),
-      );
-    }
   }
 
   String _formatVisitDate(String dateStr) {
@@ -705,16 +572,20 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
 
   Widget _emptyState(String message) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Center(
-        child: Text(
-          message,
-          style: TextStyle(
-            color: Colors.grey[500],
-            fontSize: 14,
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          Icon(Icons.location_off_rounded, size: 48, color: Colors.grey.shade300),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
+        ],
       ),
     );
   }

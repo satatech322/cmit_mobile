@@ -1,5 +1,6 @@
 // lib/features/inquiries/view/sections/inquiry_details_section.dart
 import 'package:flutter/material.dart';
+import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 
 class InquiryDetailsSection extends StatelessWidget {
@@ -42,14 +43,14 @@ class InquiryDetailsSection extends StatelessWidget {
               '$label:',
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[600],
+                color: AppTheme.textSecondary,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value.isNotEmpty ? value : 'N/A',
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary),
             ),
           ),
         ],
@@ -66,7 +67,7 @@ class InquiryDetailsSection extends StatelessWidget {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
+            color: AppTheme.textPrimary,
           ),
         ),
         const SizedBox(height: 6),
