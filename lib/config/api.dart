@@ -42,4 +42,6 @@ class API {
   // Inside class API (add this line)
   static const String getInquiryStatistics = "${ApiConfig.baseApiUrl}/get/inquiry/statistics";
 
+  static const String updateFindingInquiry = "${ApiConfig.baseApiUrl}/update/finding/inquiries";
+
 }
