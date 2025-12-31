@@ -308,7 +308,7 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                    foregroundColor: AppTheme.primaryColor
                  ),
-                 child: const Text("Manage", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                 child: const Text("Add", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                ),
              ],
            ),

@@ -292,22 +292,9 @@ extension AssignToMeModelX on AssignToMeModel {
     _ => 'Normal',
   };
 
-  Color get statusColor => switch (status) {
-    '0' => Colors.purple.shade600,
-    '1' => Colors.cyan.shade700,
-    '2' => Colors.blue.shade700,
-    '3' => Colors.orange.shade700,
-    '4' => Colors.green.shade700,
-    '5' => Colors.red.shade700,
-    _ => Colors.grey.shade600,
-  };
+  Color get statusColor => Colors.grey.shade700; // All statuses use professional Grey as requested
 
-  Color get priorityColor => switch (priority) {
-    '1' => Colors.green.shade600,
-    '2' => Colors.orange.shade700,
-    '3' => Colors.red.shade700,
-    _ => Colors.grey.shade600,
-  };
+  Color get priorityColor => Colors.grey.shade700; // All priorities use professional Grey as requested
 
   String get formattedDate =>
       '${createdAt.day.toString().padLeft(2, '0')}/'

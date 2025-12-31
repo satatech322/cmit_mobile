@@ -18,12 +18,12 @@ class InquiryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: Colors.grey.shade300), // Darker, more visible border
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.04), // Subtle shadow
+            blurRadius: 8, // Reduced blur for crisper look
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -129,7 +129,7 @@ class InquiryCard extends StatelessWidget {
                         runSpacing: 8,
                         children: [
                           _buildMiniBadge(inquiry.statusText, inquiry.statusColor),
-                          _buildMiniBadge(inquiry.formattedDate, Colors.grey),
+                          _buildMiniBadge(inquiry.formattedDate, Colors.grey.shade700), // Updated to grey.shade700
                         ],
                       ),
                     ],

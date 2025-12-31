@@ -319,12 +319,12 @@ class _MetaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppTheme.textSecondary.withOpacity(0.7)),
+        Icon(icon, size: 18, color: Colors.grey.shade700),
         const SizedBox(width: 12),
         Text(
           label,
           style: TextStyle(
-            color: AppTheme.textSecondary.withOpacity(0.8),
+            color: Colors.grey.shade700,
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
@@ -332,8 +332,8 @@ class _MetaRow extends StatelessWidget {
         const Spacer(),
         Text(
           value,
-          style: const TextStyle(
-            color: AppTheme.textPrimary,
+          style: TextStyle(
+            color: Colors.grey.shade700,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),

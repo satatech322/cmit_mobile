@@ -374,7 +374,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                         icon: const Icon(Icons.check_circle_outline, size: 20),
                         label: Text('Finalize All Findings ($totalFindings)'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
+                          backgroundColor: const Color(0xFF014323),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -396,7 +396,6 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                           title: "Annexes",
                           count: allAnnexes.length,
                           icon: Icons.attach_file_rounded,
-                          color: Colors.orange,
                           onTap: () {
                              showModalBottomSheet(
                                context: context,
@@ -437,7 +436,6 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                           title: "Documents",
                           count: documents.length,
                           icon: Icons.description_rounded,
-                          color: Colors.blue,
                           onTap: () {
                              showModalBottomSheet(
                                context: context,
@@ -566,10 +564,14 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: i.statusColor.withOpacity(0.1),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF014323), Color(0xFF0F5132)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.assignment_rounded, color: i.statusColor, size: 24),
+                child: const Icon(Icons.assignment_rounded, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -578,7 +580,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                   children: [
                     Text(
                       i.formattedDate,
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -601,7 +603,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                _buildBadge(i.statusText, i.statusColor),
                _buildBadge(i.priorityText, i.priorityColor),
                if (i.timeFrame.isNotEmpty)
-                _buildBadge(i.timeFrame, Colors.teal),
+                _buildBadge(i.timeFrame, Colors.grey.shade700),
             ],
           ),
           
@@ -671,45 +673,53 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
       required String title, 
       required int count, 
       required IconData icon, 
-      required Color color,
       required VoidCallback onTap,
     }) {
     return InkWell(
       onTap: onTap,
        borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        height: 140, 
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF014323).withOpacity(0.04), // Transparent green background
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: const Color(0xFF014323).withOpacity(0.1)), // Subtle green border
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+            // Watermark Icon covering the box
+            Positioned(
+              right: -20,
+              bottom: -20,
+              child: Icon(
+                icon,
+                size: 100,
+                color: const Color(0xFF014323).withOpacity(0.15),
               ),
-              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(height: 12),
-            Text(
-              "$count",
-               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            Text(
-              title,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+            
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: SizedBox( // Ensure full width for centering
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Spacer(),
+                    Text(
+                      "$count",
+                       style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87), // Increased size slightly
+                    ),
+                    Text(
+                      title,
+                      style: TextStyle(fontSize: 14, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
