@@ -3,7 +3,7 @@ import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/view/custom_drawer.dart';
 import 'package:cmit/features/home/view/notification_screen.dart';
 import 'package:cmit/features/inquiries/view/inquiries_screen.dart';
-import 'package:cmit/features/home/view/profile_screen.dart';
+import 'package:cmit/features/profile/view/profile_screen.dart';
 import 'package:cmit/features/home/widgets/custom_bottom_nav_bar.dart';
 import 'package:cmit/core/auth_service.dart';
 import 'package:cmit/features/inquiries/view/inquiry_details_screen.dart';
@@ -378,81 +378,81 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-                children: [
-                  // Menu Button with custom style
-                  InkWell(
-                    onTap: () => Scaffold.of(context).openDrawer(),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50.withOpacity(0.5), // More transparent
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: const Icon(
-                        Icons.menu_rounded,
-                        color: Colors.black87,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _greeting,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        _userName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              
-              // Notification Bell
+            children: [
+              // Menu Button with custom style
               InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const NotificationScreen()),
-                  );
-                },
+                onTap: () => Scaffold.of(context).openDrawer(),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.grey.shade50.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.grey.shade200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
                   child: const Icon(
-                    Icons.notifications_none_rounded,
+                    Icons.menu_rounded,
                     color: Colors.black87,
                     size: 24,
                   ),
                 ),
               ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _greeting,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    _userName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          
+          // Notification Bell
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationScreen()),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                color: Colors.black87,
+                size: 24,
+              ),
+            ),
+          ),
         ],
       ),
     );

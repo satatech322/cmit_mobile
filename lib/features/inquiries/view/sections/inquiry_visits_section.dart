@@ -35,6 +35,17 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
     super.initState();
   }
 
+  @override
+  void didUpdateWidget(covariant InquiryVisitsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Force rebuild when visits list changes from parent (triggered by global refresh)
+    if (widget.visits != oldWidget.visits) {
+      setState(() {
+        // Trigger rebuild with new visits
+      });
+    }
+  }
+
   String _getFullUrl(String? path) {
     if (path == null || path.isEmpty) return '';
     if (path.startsWith('http://') || path.startsWith('https://')) {

@@ -275,6 +275,38 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
     );
   }
 
+  void _showAnnexesModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) => _AnnexesModal(
+        inquiry: i,
+        initialAnnexes: allAnnexes,
+        onNavigateToAnnexDetails: _navigateToAnnexDetails,
+        onEditAnnex: _editAnnex,
+        onRefresh: () async {
+          await _refreshData();
+        },
+      ),
+    );
+  }
+
+  void _showDocumentsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) => _DocumentsModal(
+        inquiryId: i.id,
+        initialDocuments: documents,
+        onRefresh: () async {
+          await _refreshData();
+        },
+      ),
+    );
+  }
+
   int _getTotalFindings() {
     int total = 0;
     for (var visit in allVisits) {
@@ -742,6 +774,186 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
+      ),
+    );
+  }
+}
+
+// Stateful Modal for Annexes that listens to global refresh
+class _AnnexesModal extends StatefulWidget {
+  final AssignToMeModel inquiry;
+  final List<dynamic> initialAnnexes;
+  final Function(Map<String, dynamic>) onNavigateToAnnexDetails;
+  final Function(Map<String, dynamic>, int) onEditAnnex;
+  final Future<void> Function() onRefresh;
+
+  const _AnnexesModal({
+    required this.inquiry,
+    required this.initialAnnexes,
+    required this.onNavigateToAnnexDetails,
+    required this.onEditAnnex,
+    required this.onRefresh,
+  });
+
+  @override
+  State<_AnnexesModal> createState() => _AnnexesModalState();
+}
+
+class _AnnexesModalState extends State<_AnnexesModal> {
+  late List<dynamic> annexes;
+  StreamSubscription? _refreshSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    annexes = widget.initialAnnexes;
+    
+    // Subscribe to global refresh events
+    _refreshSubscription = GlobalRefreshEvent.instance.refreshStream.listen((_) async {
+      await widget.onRefresh();
+      // Fetch the updated inquiry data
+      final result = await AssignToMe.getAssignedInquiries();
+      if (result['success'] == true && mounted) {
+        final inquiries = result['inquiries'] as List<AssignToMeModel>;
+        try {
+          final updated = inquiries.firstWhere((inq) => inq.id == widget.inquiry.id);
+          setState(() {
+            annexes = updated.annexes;
+          });
+        } catch (e) {
+          // Inquiry not found
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Annexes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: InquiryAnnexSection(
+              inquiry: widget.inquiry,
+              annexes: annexes,
+              onNavigateToAnnexDetails: widget.onNavigateToAnnexDetails,
+              onEditAnnex: widget.onEditAnnex,
+              onAnnexAdded: () {}, // No need to call back since we're listening to global refresh
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Stateful Modal for Documents that listens to global refresh
+class _DocumentsModal extends StatefulWidget {
+  final dynamic inquiryId;
+  final List<dynamic> initialDocuments;
+  final Future<void> Function() onRefresh;
+
+  const _DocumentsModal({
+    required this.inquiryId,
+    required this.initialDocuments,
+    required this.onRefresh,
+  });
+
+  @override
+  State<_DocumentsModal> createState() => _DocumentsModalState();
+}
+
+class _DocumentsModalState extends State<_DocumentsModal> {
+  late List<dynamic> documents;
+  StreamSubscription? _refreshSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    documents = widget.initialDocuments;
+    
+    // Subscribe to global refresh events
+    _refreshSubscription = GlobalRefreshEvent.instance.refreshStream.listen((_) async {
+      await widget.onRefresh();
+      // Fetch the updated inquiry data
+      final result = await AssignToMe.getAssignedInquiries();
+      if (result['success'] == true && mounted) {
+        final inquiries = result['inquiries'] as List<AssignToMeModel>;
+        try {
+          final updated = inquiries.firstWhere((inq) => inq.id == widget.inquiryId);
+          setState(() {
+            documents = updated.requiredDocuments;
+          });
+        } catch (e) {
+          // Inquiry not found
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Documents", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: InquiryDocumentsSection(
+              initialDocuments: documents,
+              inquiryId: widget.inquiryId,
+              onDocumentsChanged: (updatedDocs) {
+                setState(() => documents = updatedDocs);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

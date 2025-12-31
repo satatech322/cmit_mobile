@@ -5,9 +5,6 @@ import 'package:cmit/features/auth/view/onboarding_screen.dart'; // Updated to O
 
 import 'package:cmit/features/home/view/home_screen.dart';
 
-import 'package:cmit/features/profile/view/profile_screen.dart';
-import 'package:cmit/features/profile/view/edit_profile_screen.dart';
-
 class Routes {
   /// ✅ **Define Route Names**
   static const String initial = '/';
@@ -21,8 +18,7 @@ class Routes {
   static const String securitySettings = '/security-settings';
   static const String favorites = '/favorites';
   static const String bookings = '/bookings';
-  static const String profile = '/profile';
-  static const String editProfile = '/edit-profile';
+
   static const String settings = '/settings';
   static const String generatedVouchers = '/generated-vouchers';
 
@@ -34,9 +30,6 @@ class Routes {
       login: (context) => LoginScreen(),
 
       home: (context) => HomeScreen(),
-
-      profile: (context) => ProfileScreen(),
-      editProfile: (context) => EditProfileScreen(),
     };
   }
 
@@ -54,14 +47,9 @@ class Routes {
 
       case Routes.home:
         return MaterialPageRoute(builder: (_) => HomeScreen());
-      case Routes.securitySettings:
-      case Routes.favorites:
-      case Routes.bookings:
 
-      case Routes.profile:
-        return MaterialPageRoute(builder: (_) => ProfileScreen());
-      case Routes.editProfile:
-        return MaterialPageRoute(builder: (_) => EditProfileScreen());
+    // Other routes like securitySettings, favorites, bookings are not handled here yet
+    // They will fall through to default (404) for now
       default:
         print("❌ ERROR: Undefined Route - ${settings.name}");
         return _errorRoute();

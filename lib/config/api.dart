@@ -44,4 +44,7 @@ class API {
 
   static const String updateFindingInquiry = "${ApiConfig.baseApiUrl}/update/finding/inquiries";
 
+  // Inside class API
+  static const String getProfileData = "${ApiConfig.baseApiUrl}/get/profile/data";
+
 }

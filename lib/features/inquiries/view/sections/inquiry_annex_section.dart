@@ -33,6 +33,17 @@ class InquiryAnnexSection extends StatefulWidget {
 class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
   static const String baseUrl = 'https://cmit.sata.pk';
 
+  @override
+  void didUpdateWidget(covariant InquiryAnnexSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Force rebuild when annexes list changes from parent (triggered by global refresh)
+    if (widget.annexes != oldWidget.annexes) {
+      setState(() {
+        // Trigger rebuild with new annexes
+      });
+    }
+  }
+
   String _getFullUrl(String? path) {
     if (path == null || path.isEmpty) return '';
     if (path.startsWith('http://') || path.startsWith('https://')) {
