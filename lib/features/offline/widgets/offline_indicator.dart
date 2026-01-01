@@ -87,7 +87,8 @@ class _OfflineIndicatorState extends State<OfflineIndicator> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isOnline && _pendingCount == 0) {
+    // Only show if there are pending items to sync
+    if (_pendingCount == 0) {
       return const SizedBox.shrink();
     }
 

@@ -190,13 +190,17 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
     if (confirmed != true) return;
 
     try {
+      // Clear cached inquiries
       await InquiryCacheService.clearCache();
+      
+      // Clear pending sync data (findings)
+      await OfflineService.clearAllOfflineData();
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cache cleared successfully'),
+          content: Text('Cache and pending data cleared successfully'),
           backgroundColor: Color(0xFF014323),
         ),
       );
@@ -231,23 +235,18 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const BackButton(color: Color(0xFF1A1A1A)),
+        leading: BackButton(color: const Color(0xFF1A1A1A)),
         title: const Text(
-          'Offline & Sync',
+          'Offline Center',
           style: TextStyle(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: Color(0xFF1A1A1A),
+            fontSize: 20
           ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: const Color(0xFFE5E5E5),
-            height: 1,
-          ),
-        ),
+        centerTitle: true,
       ),
       body: _isLoading
           ? const Center(
@@ -258,31 +257,51 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
           : RefreshIndicator(
         onRefresh: _loadOfflineData,
         color: const Color(0xFF014323),
+        backgroundColor: Colors.white,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
+              // 1. Connection Status Hero Card
+              _buildConnectionHeroCard(),
+              
+              const SizedBox(height: 24),
 
-              // Connection Status
-              _buildConnectionStatus(),
-
-              const SizedBox(height: 8),
-
-              // Pending Sync Section
+              // 2. Pending Sync Section (if any)
               if (_totalPending > 0) ...[
-                _buildPendingSyncSection(),
-                const SizedBox(height: 8),
+                _buildSectionTitle("Pending Synchronization"),
+                const SizedBox(height: 12),
+                _buildPendingSyncCard(),
+                const SizedBox(height: 24),
               ],
 
-              // Cache Information
-              _buildCacheSection(),
+              // 3. Cache Statistics
+              _buildSectionTitle("Storage & Cache"),
+              const SizedBox(height: 12),
+              _buildCacheGrid(),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 24),
 
-              // Actions
-              _buildActionsSection(),
+              // 4. Actions
+              _buildSectionTitle("Management"),
+              const SizedBox(height: 12),
+               _buildActionButtons(),
 
+              const SizedBox(height: 32),
+              
+              // 5. Info Footer
+               Center(
+                 child: Text(
+                  'Changes made offline will auto-sync when connected.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                  textAlign: TextAlign.center,
+                               ),
+               ),
               const SizedBox(height: 24),
             ],
           ),
@@ -290,60 +309,66 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
       ),
     );
   }
+  
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF666666),
+        letterSpacing: 0.5,
+      )
+    );
+  }
 
-  Widget _buildConnectionStatus() {
+  Widget _buildConnectionHeroCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: _isOnline
-            ? const Color(0xFFE8F5E9)
-            : const Color(0xFFE8F5E9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _isOnline
-              ? const Color(0xFF014323).withOpacity(0.2)
-              : const Color(0xFF014323).withOpacity(0.3),
-        ),
+        color: const Color(0xFF014323),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF014323).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.white.withOpacity(0.15),
               shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
             ),
             child: Icon(
-              _isOnline ? Icons.cloud_done : Icons.cloud_off,
-              color: const Color(0xFF014323),
-              size: 28,
+              _isOnline ? Icons.wifi : Icons.wifi_off_rounded,
+              color: Colors.white,
+              size: 32,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _isOnline ? 'Online' : 'Offline',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF014323),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _isOnline
-                      ? 'Connected to internet'
-                      : 'Using cached data',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
+          const SizedBox(height: 16),
+          Text(
+            _isOnline ? 'You are Online' : 'You are Offline',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _isOnline
+                ? 'App is fully synchronized'
+                : 'Viewing local cached data',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.9),
             ),
           ),
         ],
@@ -351,336 +376,258 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
     );
   }
 
-  Widget _buildPendingSyncSection() {
+  Widget _buildPendingSyncCard() {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.sync_problem_rounded, color: Colors.orange, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$_totalPending Pending Changes',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Data waiting to be uploaded',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          InkWell(
+            onTap: _isSyncing || !_isOnline ? null : _syncPendingChanges,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              alignment: Alignment.center,
+              child: _isSyncing
+                ? const SizedBox(
+                    width: 20, 
+                    height: 20, 
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF014323))
+                  )
+                : Text(
+                  _isOnline ? "Sync Now" : "Connect internet to sync",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: _isOnline ? const Color(0xFF014323) : Colors.grey,
+                  ),
+                ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCacheGrid() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildInfoCard(
+            title: 'Inquiries',
+            value: '$_cachedInquiriesCount',
+            icon: Icons.assignment_outlined,
+            color: Colors.blue,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildInfoCard(
+            title: 'Storage',
+            value: '${_cacheSizeMB.toStringAsFixed(1)} MB',
+            icon: Icons.sd_storage_outlined,
+            color: Colors.purple,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 20, color: color),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 2),
+           Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        _buildListButton(
+          icon: Icons.refresh_rounded,
+          title: "Refresh Cache",
+          subtitle: "Update local data from server",
+          color: const Color(0xFF014323),
+          onTap: _isOnline ? _loadOfflineData : null,
+        ),
+        const SizedBox(height: 12),
+        _buildListButton(
+          icon: Icons.delete_outline_rounded,
+          title: "Clear Storage",
+          subtitle: "Remove all cached data",
+          color: Colors.red,
+          onTap: _clearCache,
+          isDestructive: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildListButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    VoidCallback? onTap,
+    bool isDestructive = false,
+  }) {
+    final isDisabled = onTap == null;
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
             children: [
-              const Icon(
-                Icons.sync_problem,
-                color: Color(0xFF014323),
-                size: 24,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDisabled 
+                    ? Colors.grey.shade100 
+                    : (isDestructive ? Colors.red.shade50 : color.withOpacity(0.1)),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: isDisabled ? Colors.grey.shade400 : color,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Pending Sync',
+                    Text(
+                      title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
+                        color: isDisabled ? Colors.grey.shade400 : const Color(0xFF1A1A1A),
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
-                      '$_totalPending ${_totalPending == 1 ? 'item' : 'items'} waiting to sync',
+                      subtitle,
                       style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-
-          // Pending items breakdown
-          if (_pendingFindings > 0)
-            _buildPendingItem(
-              'Findings',
-              _pendingFindings,
-              Icons.assignment,
-            ),
-
-          const SizedBox(height: 16),
-
-          // Sync button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isSyncing || !_isOnline ? null : _syncPendingChanges,
-              icon: _isSyncing
-                  ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-                  : const Icon(Icons.sync, size: 20),
-              label: Text(_isSyncing ? 'Syncing...' : 'Sync Now'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF014323),
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey[300],
-                disabledForegroundColor: Colors.grey[600],
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ),
-
-          if (!_isOnline)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                'Connect to internet to sync pending changes',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPendingItem(String title, int count, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF014323),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$count',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF014323),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCacheSection() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
               Icon(
-                Icons.storage,
-                color: Color(0xFF014323),
-                size: 24,
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Cached Data',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
-                ),
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: Colors.grey.shade300,
               ),
             ],
           ),
-
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-
-          // Cache stats
-          _buildCacheStat(
-            'Cached Inquiries',
-            '$_cachedInquiriesCount',
-            Icons.folder_outlined,
-          ),
-
-          _buildCacheStat(
-            'Last Updated',
-            _formatCacheAge(),
-            Icons.schedule,
-          ),
-
-          _buildCacheStat(
-            'Cache Size',
-            '${_cacheSizeMB.toStringAsFixed(2)} MB',
-            Icons.data_usage,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCacheStat(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: Colors.grey[600],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey[700],
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionsSection() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.settings,
-                color: Color(0xFF014323),
-                size: 24,
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Actions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-
-          // Refresh Cache button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _isOnline ? _loadOfflineData : null,
-              icon: const Icon(Icons.refresh, size: 20),
-              label: const Text('Refresh Cache'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF014323),
-                side: const BorderSide(color: Color(0xFF014323)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Clear Cache button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _clearCache,
-              icon: const Icon(Icons.delete_outline, size: 20),
-              label: const Text('Clear Cache'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Info text
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 18,
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Cached data allows you to view inquiries offline. '
-                        'Changes made offline will sync automatically when you reconnect.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[700],
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

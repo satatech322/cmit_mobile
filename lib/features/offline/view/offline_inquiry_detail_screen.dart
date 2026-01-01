@@ -1,13 +1,15 @@
 // lib/features/offline/view/offline_inquiry_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/view/offline_details_screen.dart';
 import 'package:cmit/features/offline/view/offline_visit_findings_screen.dart';
+import 'package:cmit/core/auth_service.dart';
 
 // Import section widgets (reuse from main inquiry details)
-import 'package:cmit/features/inquiries/view/sections/inquiry_header_section.dart';
 import 'package:cmit/features/inquiries/view/sections/inquiry_details_section.dart';
+import 'package:cmit/features/inquiries/view/sections/inquiry_visits_section.dart';
 
 class OfflineInquiryDetailsScreen extends StatefulWidget {
   final AssignToMeModel inquiry;
@@ -24,11 +26,7 @@ class OfflineInquiryDetailsScreen extends StatefulWidget {
 class _OfflineInquiryDetailsScreenState extends State<OfflineInquiryDetailsScreen> {
   late List<dynamic> allVisits = [];
   bool _isOnline = true;
-
-  // Track expansion state
-  bool _detailsExpanded = false;
-  bool _visitsExpanded = false;
-  Map<int, bool> _visitExpansionState = {};
+  String? _currentUserId;
 
   AssignToMeModel get i => widget.inquiry;
 
@@ -37,10 +35,13 @@ class _OfflineInquiryDetailsScreenState extends State<OfflineInquiryDetailsScree
     super.initState();
     allVisits = i.visits;
     _checkConnectivity();
+    _loadCurrentUserId();
+  }
 
-    // Initialize expansion state for all visits
-    for (int idx = 0; idx < allVisits.length; idx++) {
-      _visitExpansionState[idx] = false;
+  Future<void> _loadCurrentUserId() async {
+    final userId = await AuthService.getCurrentUserId();
+    if (mounted) {
+      setState(() => _currentUserId = userId);
     }
   }
 
@@ -51,29 +52,13 @@ class _OfflineInquiryDetailsScreenState extends State<OfflineInquiryDetailsScree
     }
   }
 
-  void _navigateToOfflineSettings() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const OfflineDetailsScreen(),
-      ),
-    ).then((_) {
-      _checkConnectivity();
-    });
-  }
-
-  void _showOfflineMessage(String message) {
+  void _showOfflineMessage(String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFF014323),
+        content: Text('$feature is not available in offline mode'),
+        backgroundColor: Colors.orange,
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-        action: SnackBarAction(
-          label: 'Settings',
-          textColor: Colors.white,
-          onPressed: _navigateToOfflineSettings,
-        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -89,565 +74,335 @@ class _OfflineInquiryDetailsScreenState extends State<OfflineInquiryDetailsScree
       ),
     );
   }
+  
+  // Navigation Callbacks (Read-Only / Offline handled)
 
-  String _formatVisitDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr.split(' ').first);
-      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-    } catch (e) {
-      return 'Invalid Date';
-    }
+  void _onNavigateToFindings(Map<String, dynamic> visit) {
+     _navigateToOfflineVisitFindings(visit);
+  }
+  
+  void _onEditFinding(Map<String, dynamic> visit, Map<String, dynamic> finding, int index) {
+      _showOfflineMessage('Editing findings');
+  }
+  
+  void _onAddVisit() {
+      _showOfflineMessage('Adding visits');
   }
 
   @override
   Widget build(BuildContext context) {
+    // Offline usually means we can't act as chairperson fully, 
+    // but we display the badge if the data says so.
+    final isChairperson = i.isChairperson; 
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: const BackButton(color: Color(0xFF1A1A1A)),
-        title: const Text(
-          'Inquiry Details (Offline)',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: const Color(0xFFE5E5E5),
-            height: 1,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.settings_outlined,
-              color: Color(0xFF014323),
-              size: 22,
-            ),
-            onPressed: _navigateToOfflineSettings,
-            tooltip: 'Offline Settings',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Offline Banner
-          if (!_isOnline)
-            InkWell(
-              onTap: _navigateToOfflineSettings,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                color: const Color(0xFFE8F5E9),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.cloud_off,
-                      size: 18,
-                      color: Color(0xFF014323),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Offline Mode',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF014323),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Viewing cached data - Read only',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: const Color(0xFF014323).withOpacity(0.8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: Color(0xFF014323),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // Scrollable Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-
-                  // Header Section (Read-only)
-                  InquiryHeaderSection(inquiry: i),
-
-                  const SizedBox(height: 8),
-
-                  // Details Section
-                  _buildCollapsibleSection(
-                    title: 'Details',
-                    icon: Icons.info_outline,
-                    isExpanded: _detailsExpanded,
-                    onToggle: () => setState(() => _detailsExpanded = !_detailsExpanded),
-                    child: InquiryDetailsSection(inquiry: i),
-                  ),
-
-                  // Field Visits Section (Same as online version)
-                  _buildCollapsibleSection(
-                    title: 'Field Visits',
-                    icon: Icons.location_on,
-                    count: allVisits.length,
-                    isExpanded: _visitsExpanded,
-                    onToggle: () => setState(() => _visitsExpanded = !_visitsExpanded),
-                    child: _buildOfflineVisitsSection(),
-                  ),
-
-                  // Offline Info Card
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF014323).withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: Color(0xFF014323),
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Limited Access',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF014323),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'You can view inquiry details offline, but editing is disabled. Connect to internet to make changes.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: const Color(0xFF014323).withOpacity(0.9),
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOfflineVisitsSection() {
-    if (allVisits.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
+      backgroundColor: Colors.grey[50], // Soft background matching online
+      body: SafeArea(
         child: Column(
           children: [
-            Icon(
-              Icons.location_off_outlined,
-              size: 48,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'No field visits recorded',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          ...allVisits.asMap().entries.map((entry) {
-            final int visitNumber = entry.key + 1;
-            final visit = entry.value as Map<String, dynamic>;
-            return _visitCard(visit, visitNumber);
-          }).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _visitCard(Map<String, dynamic> visit, int visitNumber) {
-    final findingsList = (visit['findings'] as List<dynamic>? ?? [])
-        .cast<Map<String, dynamic>>();
-
-    final String dateStr = (visit['visit_date'] ?? '').toString();
-    final String formattedDate = _formatVisitDate(dateStr);
-    final bool isExpanded = _visitExpansionState[visitNumber - 1] ?? false;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                _visitExpansionState[visitNumber - 1] = !isExpanded;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(12),
-                  topRight: const Radius.circular(12),
-                  bottomLeft: isExpanded ? Radius.zero : const Radius.circular(12),
-                  bottomRight: isExpanded ? Radius.zero : const Radius.circular(12),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF014323),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Visit $visitNumber',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(Icons.calendar_today, size: 13, color: Colors.grey[700]),
-                  const SizedBox(width: 4),
-                  Text(
-                    formattedDate,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                      color: Color(0xFF424242),
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: const Color(0xFF014323),
-                    size: 24,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isExpanded) ...[
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, size: 14, color: Colors.grey[700]),
-                      const SizedBox(width: 6),
-                      Text(
-                        (visit['visit_time'] ?? '').toString(),
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _visitInfo('Officer', (visit['officer'] ?? '').toString()),
-                  const SizedBox(height: 6),
-                  _visitInfo('Driver', (visit['driver'] ?? '').toString()),
-                  const SizedBox(height: 6),
-                  _visitInfo('Vehicle', (visit['vehicle'] ?? '').toString()),
-                ],
-              ),
-            ),
-            if (findingsList.isNotEmpty) ...[
-              Divider(height: 1, color: Colors.grey[300]),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            // Custom Header
+            _buildCustomHeader(isChairperson),
+            
+             // Offline Indicator Strip
+             if (!_isOnline)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                color: const Color(0xFF014323),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Findings (${findingsList.length})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const Spacer(),
-                        // Read-only badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF5F5F5),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFE0E0E0)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.visibility_outlined,
-                                size: 14,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Read-only',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[700],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    const Icon(Icons.cloud_off, size: 14, color: Colors.white),
+                    const SizedBox(width: 8),
+                    const Text(
+                      "Offline Mode - Read Only", 
+                      style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)
                     ),
-                    const SizedBox(height: 8),
-                    ...findingsList.asMap().entries.map((entry) {
-                      final int index = entry.key + 1;
-                      final Map<String, dynamic> finding = entry.value;
-                      return _findingItem(
-                        user: (finding['user'] ?? 'Unknown').toString(),
-                        findingsText: (finding['findings'] ?? '').toString(),
-                        number: index,
-                      );
-                    }).toList(),
                   ],
                 ),
               ),
-            ],
-            Divider(height: 1, color: Colors.grey[300]),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _navigateToOfflineVisitFindings(visit),
-                  icon: const Icon(Icons.assignment, size: 18),
-                  label: const Text('Findings/Proceedings/Recommendations'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF014323),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                children: [
+                  // Hero Card (Summary)
+                  _buildHeroCard(),
+                  const SizedBox(height: 24),
+
+                  // Section Title: Details
+                  _buildSectionHeader("Overview", Icons.info_outline),
+                  _buildContentCard(
+                    child: InquiryDetailsSection(inquiry: i),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Section Title: Activity
+                  _buildSectionHeader("Field Visits", Icons.location_on_outlined),
+                  _buildContentCard(
+                    padding: EdgeInsets.zero,
+                    child: InquiryVisitsSection(
+                      inquiry: i,
+                      visits: allVisits,
+                      onNavigateToFindings: _onNavigateToFindings,
+                      onEditFinding: _onEditFinding,
+                      onAddVisit: _onAddVisit,
+                      currentUserId: _currentUserId ?? "", 
                     ),
                   ),
-                ),
+                  
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomHeader(bool isChairperson) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      color: Colors.white,
+      child: Row(
+        children: [
+          // Back Button
+          InkWell(
+            onTap: () => Navigator.pop(context),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Text(
+              "Inquiry Details",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          if (isChairperson)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.star_rounded, size: 14, color: AppTheme.primaryColor),
+                  SizedBox(width: 4),
+                  Text(
+                    'Chairperson',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _visitInfo(String label, String value) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 60,
-          child: Text(
-            '$label:',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[600],
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value.isNotEmpty ? value : 'N/A',
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _findingItem({
-    required String user,
-    required String findingsText,
-    required int number,
-  }) {
+  Widget _buildHeroCard() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+           BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top Row: Status info
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF014323),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '#$number',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF014323), Color(0xFF0F5132)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: const Icon(Icons.assignment_rounded, color: Colors.white, size: 24),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  user,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      i.formattedDate,
+                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      i.title,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-              ),
-              // Read-only indicator instead of edit button
-              Icon(
-                Icons.lock_outline,
-                size: 16,
-                color: Colors.grey[400],
               ),
             ],
           ),
-          if (findingsText.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              findingsText,
-              style: const TextStyle(fontSize: 13, height: 1.4),
-            ),
-          ],
+          const SizedBox(height: 20),
+          
+          // Badges
+          Wrap(
+            spacing: 8,
+            children: [
+               _buildBadge(i.statusText, i.statusColor),
+               _buildBadge(i.priorityText, i.priorityColor),
+               if (i.timeFrame.isNotEmpty)
+                _buildBadge(i.timeFrame, Colors.grey.shade700),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCollapsibleSection({
-    required String title,
-    required IconData icon,
-    int? count,
-    required bool isExpanded,
-    required VoidCallback onToggle,
-    required Widget child,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      color: Colors.white,
-      child: Column(
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      child: Row(
         children: [
-          InkWell(
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Icon(icon, size: 20, color: const Color(0xFF014323)),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  if (count != null && count > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$count',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF014323),
-                        ),
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.grey[600],
-                  ),
-                ],
-              ),
+          Icon(icon, size: 18, color: Colors.grey.shade600),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade800,
             ),
           ),
-          if (isExpanded) ...[
-            const Divider(height: 1),
-            child,
-          ],
         ],
+      ),
+    );
+  }
+  
+  Widget _buildContentCard({required Widget child, EdgeInsetsGeometry? padding}) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+         border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+           BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+  
+  Widget _buildSmallSectionCard({
+      required String title, 
+      required int count, 
+      required IconData icon, 
+      required VoidCallback onTap,
+    }) {
+    return InkWell(
+      onTap: onTap,
+       borderRadius: BorderRadius.circular(20),
+      child: Container(
+        height: 140, 
+        decoration: BoxDecoration(
+          color: const Color(0xFF014323).withOpacity(0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF014323).withOpacity(0.1)),
+        ),
+        child: Stack(
+          children: [
+            // Watermark Icon covering the box
+            Positioned(
+              right: -20,
+              bottom: -20,
+              child: Icon(
+                icon,
+                size: 100,
+                color: const Color(0xFF014323).withOpacity(0.15),
+              ),
+            ),
+            
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Spacer(),
+                    Text(
+                      "$count",
+                       style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    Text(
+                      title,
+                      style: TextStyle(fontSize: 14, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
       ),
     );
   }

@@ -188,16 +188,6 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
       await _loadFromAPI();
     } else {
       await _loadFromCache();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No internet connection. Showing cached data.'),
-          backgroundColor: AppTheme.primaryColor,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     }
   }
 
@@ -259,20 +249,20 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  color: AppTheme.secondaryColor.withOpacity(0.1),
+                  color: const Color(0xFF014323),
                   child: Row(
                     children: [
-                      Icon(Icons.cloud_off, size: 18, color: AppTheme.secondaryColor),
+                      const Icon(Icons.cloud_off, size: 18, color: Colors.white),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Offline Mode',
                               style: TextStyle(
                                 fontSize: 13, 
-                                color: AppTheme.secondaryColor, 
+                                color: Colors.white, 
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -280,13 +270,13 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
                               'Viewing cached data. Tap for details.',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppTheme.secondaryColor.withOpacity(0.8),
+                                color: Colors.white.withOpacity(0.8),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Icon(Icons.chevron_right, size: 20, color: AppTheme.secondaryColor),
+                      const Icon(Icons.chevron_right, size: 20, color: Colors.white),
                     ],
                   ),
                 ),

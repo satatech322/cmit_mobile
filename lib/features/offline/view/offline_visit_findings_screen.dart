@@ -110,6 +110,15 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
     if (_isOnline) {
       await _submitOnline(content);
     } else {
+      if (content.length < 5) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Findings must be at least 5 characters long in offline mode'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
       await _submitOffline(content);
     }
   }
