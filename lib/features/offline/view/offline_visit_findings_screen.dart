@@ -8,6 +8,7 @@ import 'package:cmit/core/finding_inquiry_service.dart';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/widgets/offline_indicator.dart';
 import 'package:cmit/core/widgets/wordpad_widget.dart';
+import 'package:cmit/core/utils/html_converter.dart';
 
 class OfflineVisitFindingsScreen extends StatefulWidget {
   final Map<String, dynamic> visit;
@@ -89,9 +90,10 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
   }
 
   Future<void> _submitFindings() async {
-    final content = _controller.document.toPlainText().trim();
+    final htmlContent = QuillToHtmlConverter.convertDeltaToHtml(_controller.document.toDelta()).trim();
+    final plainText = _controller.document.toPlainText().trim();
 
-    if (content.isEmpty || content == '\n') {
+    if (plainText.isEmpty || plainText == '\n') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter findings before submitting'),
@@ -105,22 +107,22 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
 
     setState(() => _isSubmitting = true);
 
-    // Check connectivity again
     await _checkConnectivity();
 
     if (_isOnline) {
-      await _submitOnline(content);
+      await _submitOnline(htmlContent);
     } else {
-      if (content.length < 5) {
+      if (plainText.length < 5) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Findings must be at least 5 characters long in offline mode'),
             backgroundColor: Colors.orange,
           ),
         );
+        setState(() => _isSubmitting = false); 
         return;
       }
-      await _submitOffline(content);
+      await _submitOffline(htmlContent);
     }
   }
 

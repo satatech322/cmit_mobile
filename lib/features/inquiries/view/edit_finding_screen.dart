@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cmit/core/finding_update_service.dart'; // Adjust path if needed
 import 'package:cmit/core/widgets/wordpad_widget.dart';
+import 'package:cmit/core/utils/html_converter.dart';
 
 class EditFindingScreen extends StatefulWidget {
   final Map<String, dynamic> visit;
@@ -209,7 +210,11 @@ class _EditFindingScreenState extends State<EditFindingScreen> {
 
   // Save with API call
   Future<void> _saveFinding() async {
+    // Generate HTML content
+    final htmlContent = QuillToHtmlConverter.convertDeltaToHtml(_controller.document.toDelta()).trim();
+    // Use plain text for validation
     final plainText = _controller.document.toPlainText().trim();
+    
     if (plainText.isEmpty) {
       _showSnackBar('Please enter finding details', isError: true);
       return;
@@ -218,7 +223,7 @@ class _EditFindingScreenState extends State<EditFindingScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final deltaJson = jsonEncode(_controller.document.toDelta().toJson());
+      // Use htmlContent instead of deltaJson
       final newBase64Images = await _convertImagesToBase64();
 
       final List<String> finalImageList = [
@@ -234,14 +239,15 @@ class _EditFindingScreenState extends State<EditFindingScreen> {
 
       final result = await FindingInquiryService.updateFindingInquiry(
         findingId: findingId,
-        findings: deltaJson,
+        findings: htmlContent, // Send HTML
         files: finalImageList,
       );
 
       if (!mounted) return;
 
       if (result['success']) {
-        widget.finding['findings'] = deltaJson;
+        // Update local object with new HTML content
+        widget.finding['findings'] = htmlContent;
         widget.finding['files'] = finalImageList;
 
         widget.onSave();

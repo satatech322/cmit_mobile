@@ -7,11 +7,13 @@ class FinalizedFindingService {
   static Future<Map<String, dynamic>> storeFinalizedFinding({
     required String combinedFindings,
     required int visitId,
+    required int inquiryId,
   }) async {
     try {
       final payload = {
         'combined_findings': combinedFindings.trim(),
         'visit_id': visitId,
+        'inquiry_id': inquiryId,
       };
 
       print("📤 Sending finalized finding to: ${API.storeFinalizedFindingInquiry}");

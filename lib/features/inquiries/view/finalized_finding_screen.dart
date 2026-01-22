@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:cmit/core/finalized_finding_service.dart'; // Adjust path if needed
 import 'package:cmit/core/widgets/wordpad_widget.dart';
+import 'package:cmit/core/utils/html_converter.dart';
 
 class FinalizedFindingScreen extends StatefulWidget {
   final Map<String, dynamic> visit;
@@ -69,10 +70,12 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Get plain text from Quill editor
-      final String combinedFindings = _quillController.document.toPlainText().trim();
+      // Get HTML content
+      final String htmlContent = QuillToHtmlConverter.convertDeltaToHtml(_quillController.document.toDelta()).trim();
+      // Get plain text for validation
+      final String plainText = _quillController.document.toPlainText().trim();
 
-      if (combinedFindings.isEmpty) {
+      if (plainText.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please enter some findings before finalizing.'),
@@ -85,11 +88,11 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
       final int visitId = widget.visit['id'] as int;
 
       print("Submitting finalized finding for visit_id: $visitId");
-      print("Content length: ${combinedFindings.length}");
-
+      
       final response = await FinalizedFindingService.storeFinalizedFinding(
-        combinedFindings: combinedFindings,
+        combinedFindings: htmlContent, // Send HTML
         visitId: visitId,
+        inquiryId: int.parse(widget.inquiryId),
       );
 
       if (!mounted) return;

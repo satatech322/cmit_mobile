@@ -6,6 +6,7 @@ import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:image_picker/image_picker.dart';
 import 'package:cmit/core/finding_inquiry_service.dart';
 import 'package:cmit/core/widgets/wordpad_widget.dart';
+import 'package:cmit/core/utils/html_converter.dart';
 
 class VisitFindingsScreen extends StatefulWidget {
   final Map<String, dynamic> visit;
@@ -243,9 +244,13 @@ class _VisitFindingsScreenState extends State<VisitFindingsScreen> {
   }
 
   Future<void> _submitFindings() async {
-    final content = _controller.document.toPlainText().trim();
+    // Generate HTML content
+    final content = QuillToHtmlConverter.convertDeltaToHtml(_controller.document.toDelta()).trim();
+    
+    // Check plain text for empty validation
+    final plainText = _controller.document.toPlainText().trim();
 
-    if (content.isEmpty || content == '\n') {
+    if (plainText.isEmpty || plainText == '\n') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter findings before submitting'),
@@ -277,7 +282,7 @@ class _VisitFindingsScreenState extends State<VisitFindingsScreen> {
     }
 
     final result = await FindingInquiryService.storeFinding(
-      findings: content,
+      findings: content, // Send HTML content
       visitId: int.parse(visitId.toString()),
       files: base64Images,
     );
@@ -303,6 +308,8 @@ class _VisitFindingsScreenState extends State<VisitFindingsScreen> {
       );
     }
   }
+
+
 
   String _formatVisitDate(String dateStr) {
     try {
