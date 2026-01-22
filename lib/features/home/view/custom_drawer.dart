@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cmit/config/routes.dart';
 import 'package:cmit/config/theme.dart';
 import 'package:cmit/core/auth_service.dart';
+import 'package:cmit/core/local_storage.dart';
 
 
 class CustomDrawer extends StatefulWidget {
@@ -18,6 +20,7 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> {
   String _userName = 'User';
   String _userRole = 'CMIT User'; // Default role or email placeholder
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -32,6 +35,38 @@ class _CustomDrawerState extends State<CustomDrawer> {
         _userName = name ?? 'User';
         // In a real app, you might fetch role/email here too
       });
+    }
+  }
+
+  Future<void> _logout() async {
+    setState(() => _isLoggingOut = true);
+
+    try {
+      final success = await AuthService.logout();
+
+      if (!mounted) return;
+
+      if (success) {
+        await LocalStorage.logout();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logged out successfully')),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, Routes.login, (route) => false);
+      } else {
+        // Force local logout if server fails
+        await LocalStorage.logout();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logged out locally')),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, Routes.login, (route) => false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      await LocalStorage.logout();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logged out due to an error')),
+      );
+      Navigator.pushNamedAndRemoveUntil(context, Routes.login, (route) => false);
     }
   }
 
@@ -128,16 +163,20 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: Divider(color: Colors.grey.shade100, thickness: 1),
                 ),
-                _buildDrawerItem(
-                  icon: Icons.logout_rounded,
-                  title: "Log out",
-                  textColor: Colors.red,
-                  iconColor: Colors.red,
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Implement logout logic
-                  },
-                ),
+                _isLoggingOut
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                        ),
+                      )
+                    : _buildDrawerItem(
+                        icon: Icons.logout_rounded,
+                        title: "Log out",
+                        textColor: Colors.red,
+                        iconColor: Colors.red,
+                        onTap: _logout,
+                      ),
               ],
             ),
           ),

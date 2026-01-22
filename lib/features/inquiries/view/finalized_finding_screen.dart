@@ -4,6 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'dart:convert';
 
 import 'package:cmit/core/finalized_finding_service.dart'; // Adjust path if needed
+import 'package:cmit/core/widgets/wordpad_widget.dart';
 
 class FinalizedFindingScreen extends StatefulWidget {
   final Map<String, dynamic> visit;
@@ -167,7 +168,8 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
                 ),
               ),
             ),
-            _buildBottomBar(),
+            if (MediaQuery.of(context).viewInsets.bottom == 0)
+              _buildBottomBar(),
           ],
         ),
       ),
@@ -261,33 +263,18 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
   }
 
   Widget _buildQuillEditor() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.of(context).size.height * 0.4,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
-                const Icon(Icons.edit_document, size: 20, color: Color(0xFF014323)),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.edit_document, size: 20, color: Color(0xFF014323)),
+                SizedBox(width: 8),
+                Text(
                   'Edit Combined Findings',
                   style: TextStyle(
                     fontSize: 16,
@@ -298,41 +285,10 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
               ],
             ),
           ),
-          Container(
-            color: const Color(0xFFF8F9FA),
-            child: quill.QuillToolbar.simple(
-              configurations: quill.QuillSimpleToolbarConfigurations(
-                controller: _quillController,
-                sharedConfigurations: const quill.QuillSharedConfigurations(),
-                showAlignmentButtons: true,
-                showBoldButton: true,
-                showItalicButton: true,
-                showUnderLineButton: true,
-                showListBullets: true,
-                showListNumbers: true,
-                showIndent: true,
-                showUndo: true,
-                showRedo: true,
-                showClearFormat: true,
-                showHeaderStyle: true,
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          quill.QuillEditor.basic(
-            configurations: quill.QuillEditorConfigurations(
-              controller: _quillController,
-              placeholder: 'Edit all findings here...',
-              padding: const EdgeInsets.all(16),
-              autoFocus: false,
-              expands: false,
-              scrollable: true,
-              minHeight: 300,
-              sharedConfigurations: const quill.QuillSharedConfigurations(
-                locale: Locale('en'),
-              ),
-            ),
+          WordpadWidget(
+            controller: _quillController,
             focusNode: _focusNode,
+            placeholder: 'Edit all findings here...',
           ),
         ],
       ),

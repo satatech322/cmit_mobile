@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cmit/core/finding_inquiry_service.dart';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/widgets/offline_indicator.dart';
+import 'package:cmit/core/widgets/wordpad_widget.dart';
 
 class OfflineVisitFindingsScreen extends StatefulWidget {
   final Map<String, dynamic> visit;
@@ -316,34 +317,19 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
                   children: [
                     _buildVisitInfoHeader(formattedDate, visitTime),
                     const SizedBox(height: 12),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      constraints: BoxConstraints(
-                        minHeight: MediaQuery.of(context).size.height * 0.4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE0E0E0)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Header
-                          Padding(
-                            padding: const EdgeInsets.all(16),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
                             child: Row(
                               children: [
-                                const Icon(Icons.description, size: 20, color: Color(0xFF014323)),
-                                const SizedBox(width: 8),
-                                const Text(
+                                Icon(Icons.description,
+                                    size: 20, color: Color(0xFF014323)),
+                                SizedBox(width: 8),
+                                Text(
                                   'Finding Details',
                                   style: TextStyle(
                                     fontSize: 16,
@@ -354,42 +340,12 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
                               ],
                             ),
                           ),
-                          // Toolbar
-                          Container(
-                            color: const Color(0xFFF8F9FA),
-                            child: quill.QuillToolbar.simple(
-                              configurations: quill.QuillSimpleToolbarConfigurations(
-                                controller: _controller,
-                                sharedConfigurations: const quill.QuillSharedConfigurations(),
-                                showAlignmentButtons: true,
-                                showBoldButton: true,
-                                showItalicButton: true,
-                                showUnderLineButton: true,
-                                showListBullets: true,
-                                showListNumbers: true,
-                                showUndo: true,
-                                showRedo: true,
-                                showClearFormat: true,
-                                showHeaderStyle: true,
-                              ),
-                            ),
-                          ),
-                          const Divider(height: 1),
-                          // Editor
-                          quill.QuillEditor.basic(
-                            configurations: quill.QuillEditorConfigurations(
-                              controller: _controller,
-                              placeholder: 'Enter findings, proceedings, and recommendations...',
-                              padding: const EdgeInsets.all(16),
-                              autoFocus: false,
-                              expands: false,
-                              scrollable: true,
-                              minHeight: 200, // Reduced minHeight to make space for images
-                              sharedConfigurations: const quill.QuillSharedConfigurations(
-                                locale: Locale('en'),
-                              ),
-                            ),
+                          WordpadWidget(
+                            controller: _controller,
                             focusNode: _focusNode,
+                            placeholder:
+                                'Enter findings, proceedings, and recommendations...',
+                            minHeight: 200,
                           ),
                         ],
                       ),
@@ -500,7 +456,8 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
                 ),
               ),
             ),
-            _buildBottomBar(),
+            if (MediaQuery.of(context).viewInsets.bottom == 0)
+              _buildBottomBar(),
           ],
         ),
       ),

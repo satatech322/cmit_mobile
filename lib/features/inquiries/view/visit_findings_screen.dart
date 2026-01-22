@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:image_picker/image_picker.dart';
 import 'package:cmit/core/finding_inquiry_service.dart';
+import 'package:cmit/core/widgets/wordpad_widget.dart';
 
 class VisitFindingsScreen extends StatefulWidget {
   final Map<String, dynamic> visit;
@@ -359,7 +360,9 @@ class _VisitFindingsScreenState extends State<VisitFindingsScreen> {
                 ),
               ),
             ),
-            _buildBottomBar(),
+            // Only show bottom bar when keyboard is closed
+            if (MediaQuery.of(context).viewInsets.bottom == 0)
+              _buildBottomBar(),
           ],
         ),
       ),
@@ -367,34 +370,18 @@ class _VisitFindingsScreenState extends State<VisitFindingsScreen> {
   }
 
   Widget _buildFindingsEditor() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.of(context).size.height * 0.4,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(16),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
-                const Icon(Icons.description, size: 20, color: Color(0xFF014323)),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.description, size: 20, color: Color(0xFF014323)),
+                SizedBox(width: 8),
+                Text(
                   'Finding Details',
                   style: TextStyle(
                     fontSize: 16,
@@ -405,42 +392,10 @@ class _VisitFindingsScreenState extends State<VisitFindingsScreen> {
               ],
             ),
           ),
-          // Toolbar
-          Container(
-            color: const Color(0xFFF8F9FA),
-            child: quill.QuillToolbar.simple(
-              configurations: quill.QuillSimpleToolbarConfigurations(
-                controller: _controller,
-                sharedConfigurations: const quill.QuillSharedConfigurations(),
-                showAlignmentButtons: true,
-                showBoldButton: true,
-                showItalicButton: true,
-                showUnderLineButton: true,
-                showListBullets: true,
-                showListNumbers: true,
-                showUndo: true,
-                showRedo: true,
-                showClearFormat: true,
-                showHeaderStyle: true,
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          // Editor
-          quill.QuillEditor.basic(
-            configurations: quill.QuillEditorConfigurations(
-              controller: _controller,
-              placeholder: 'Enter findings, proceedings, and recommendations...',
-              padding: const EdgeInsets.all(16),
-              autoFocus: false,
-              expands: false,
-              scrollable: true,
-              minHeight: 300,
-              sharedConfigurations: const quill.QuillSharedConfigurations(
-                locale: Locale('en'),
-              ),
-            ),
+          WordpadWidget(
+            controller: _controller,
             focusNode: _focusNode,
+            placeholder: 'Enter findings, proceedings, and recommendations...',
           ),
         ],
       ),

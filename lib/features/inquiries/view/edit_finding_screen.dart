@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cmit/core/finding_update_service.dart'; // Adjust path if needed
+import 'package:cmit/core/widgets/wordpad_widget.dart';
 
 class EditFindingScreen extends StatefulWidget {
   final Map<String, dynamic> visit;
@@ -300,7 +301,8 @@ class _EditFindingScreenState extends State<EditFindingScreen> {
               ),
             ),
           ),
-          _buildBottomBar(totalImages),
+          if (MediaQuery.of(context).viewInsets.bottom == 0)
+            _buildBottomBar(totalImages),
         ],
       ),
     );
@@ -348,52 +350,29 @@ class _EditFindingScreenState extends State<EditFindingScreen> {
   }
 
   Widget _buildQuillEditor() {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
                 Icon(Icons.description, size: 20, color: Color(0xFF014323)),
                 SizedBox(width: 8),
-                Text('Finding Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+                Text('Finding Details',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A1A))),
               ],
             ),
           ),
-          Container(
-            color: const Color(0xFFF8F9FA),
-            child: QuillToolbar.simple(
-              configurations: QuillSimpleToolbarConfigurations(
-                controller: _controller,
-                showAlignmentButtons: true,
-                showBoldButton: true,
-                showItalicButton: true,
-                showUnderLineButton: true,
-                showListBullets: true,
-                showListNumbers: true,
-                showIndent: true,
-                showClearFormat: true,
-                showHeaderStyle: true,
-                showUndo: true,
-                showRedo: true,
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          Container(
-            constraints: const BoxConstraints(minHeight: 300),
-            padding: const EdgeInsets.all(16),
-            child: QuillEditor.basic(
-              configurations: QuillEditorConfigurations(
-                controller: _controller,
-                placeholder: 'Enter finding details...',
-              ),
-              focusNode: _focusNode,
-            ),
+          WordpadWidget(
+            controller: _controller,
+            focusNode: _focusNode,
+            placeholder: 'Enter finding details...',
           ),
         ],
       ),
