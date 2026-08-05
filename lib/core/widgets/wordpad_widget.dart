@@ -67,7 +67,7 @@ class _WordpadWidgetState extends State<WordpadWidget> {
         border: Border.all(color: _isFocused ? const Color(0xFF014323) : const Color(0xFFE0E0E0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -87,9 +87,9 @@ class _WordpadWidgetState extends State<WordpadWidget> {
                           color: Color(0xFFF8F9FA),
                           borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                         ),
-                        child: QuillToolbar.simple(
-                          configurations: QuillSimpleToolbarConfigurations(
-                            controller: widget.controller,
+                        child: QuillSimpleToolbar(
+                          controller: widget.controller,
+                          config: QuillSimpleToolbarConfig(
                             showFontFamily: false,
                             showFontSize: false,
                             showColorButton: false,
@@ -127,15 +127,15 @@ class _WordpadWidgetState extends State<WordpadWidget> {
           Container(
             constraints: BoxConstraints(minHeight: widget.minHeight),
             child: QuillEditor.basic(
-              configurations: QuillEditorConfigurations(
-                controller: widget.controller,
+              controller: widget.controller,
+              focusNode: widget.focusNode,
+              config: QuillEditorConfig(
                 placeholder: widget.placeholder,
                 padding: const EdgeInsets.all(16),
                 autoFocus: false,
                 expands: false,
                 scrollable: true,
               ),
-              focusNode: widget.focusNode,
             ),
           ),
         ],

@@ -1,0 +1,87 @@
+Launching lib/main.dart on SM A165F in debug mode...
+Running Gradle task 'assembleDebug'...                          
+Warning: Flutter support for your project's Kotlin version (1.9.24) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.1.0 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's KGP version is typically defined in the plugins block of the `settings.gradle` file (/Volumes/Arsalan Data/SATA TECHNLOGOIES/MOBILE APPLICATION/cmit_mobile/android/settings.gradle), by a plugin with the id of org.jetbrains.kotlin.android. 
+If you don't see a plugins block, your project was likely created with an older template version, in which case it is most likely defined in the top-level build.gradle file (/Volumes/Arsalan Data/SATA TECHNLOGOIES/MOBILE APPLICATION/cmit_mobile/android/build.gradle) by the ext.kotlin_version property.
+
+Warning: The plugin connectivity_plus requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin file_picker requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin url_launcher_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Your project is configured to compile against Android SDK 35, but the following plugin(s) require to be compiled against a higher Android SDK version:
+- connectivity_plus compiles against Android SDK 36
+- file_picker compiles against Android SDK 36
+- url_launcher_android compiles against Android SDK 36
+Fix this issue by compiling against the highest Android SDK version (they are backward compatible).
+Add the following to /Volumes/Arsalan Data/SATA TECHNLOGOIES/MOBILE APPLICATION/cmit_mobile/android/app/build.gradle:
+
+    android {
+        compileSdk = 36
+        ...
+    }
+lib/features/inquiries/view/visit_findings_screen.dart:9:8: Error: Error when reading 'lib/core/utils/html_converter.dart': No such file or directory
+import 'package:cmit/core/utils/html_converter.dart';
+       ^
+lib/features/inquiries/view/edit_finding_screen.dart:11:8: Error: Error when reading 'lib/core/utils/html_converter.dart': No such file or directory
+import 'package:cmit/core/utils/html_converter.dart';
+       ^
+lib/features/inquiries/view/finalized_finding_screen.dart:8:8: Error: Error when reading 'lib/core/utils/html_converter.dart': No such file or directory
+import 'package:cmit/core/utils/html_converter.dart';
+       ^
+lib/features/offline/view/offline_visit_findings_screen.dart:11:8: Error: Error when reading 'lib/core/utils/html_converter.dart': No such file or directory
+import 'package:cmit/core/utils/html_converter.dart';
+       ^
+lib/features/inquiries/view/visit_findings_screen.dart:248:21: Error: The getter 'QuillToHtmlConverter' isn't defined for the type '_VisitFindingsScreenState'.
+ - '_VisitFindingsScreenState' is from 'package:cmit/features/inquiries/view/visit_findings_screen.dart' ('lib/features/inquiries/view/visit_findings_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'QuillToHtmlConverter'.
+    final content = QuillToHtmlConverter.convertDeltaToHtml(_controller.document.toDelta()).trim();
+                    ^^^^^^^^^^^^^^^^^^^^
+lib/features/inquiries/view/edit_finding_screen.dart:214:25: Error: The getter 'QuillToHtmlConverter' isn't defined for the type '_EditFindingScreenState'.
+ - '_EditFindingScreenState' is from 'package:cmit/features/inquiries/view/edit_finding_screen.dart' ('lib/features/inquiries/view/edit_finding_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'QuillToHtmlConverter'.
+    final htmlContent = QuillToHtmlConverter.convertDeltaToHtml(_controller.document.toDelta()).trim();
+                        ^^^^^^^^^^^^^^^^^^^^
+lib/features/inquiries/view/finalized_finding_screen.dart:74:34: Error: The getter 'QuillToHtmlConverter' isn't defined for the type '_FinalizedFindingScreenState'.
+ - '_FinalizedFindingScreenState' is from 'package:cmit/features/inquiries/view/finalized_finding_screen.dart' ('lib/features/inquiries/view/finalized_finding_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'QuillToHtmlConverter'.
+      final String htmlContent = QuillToHtmlConverter.convertDeltaToHtml(_quillController.document.toDelta()).trim();
+                                 ^^^^^^^^^^^^^^^^^^^^
+lib/features/offline/view/offline_visit_findings_screen.dart:93:25: Error: The getter 'QuillToHtmlConverter' isn't defined for the type '_OfflineVisitFindingsScreenState'.
+ - '_OfflineVisitFindingsScreenState' is from 'package:cmit/features/offline/view/offline_visit_findings_screen.dart' ('lib/features/offline/view/offline_visit_findings_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'QuillToHtmlConverter'.
+    final htmlContent = QuillToHtmlConverter.convertDeltaToHtml(_controller.document.toDelta()).trim();
+                        ^^^^^^^^^^^^^^^^^^^^
+lib/core/widgets/wordpad_widget.dart:91:27: Error: No named parameter with the name 'configurations'.
+                          configurations: QuillSimpleToolbarConfigurations(
+                          ^^^^^^^^^^^^^^
+/Users/mac/.pub-cache/hosted/pub.dev/flutter_quill-11.5.0/lib/src/toolbar/simple_toolbar.dart:33:9: Context: Found this candidate, but the arguments don't match.
+  const QuillSimpleToolbar({
+        ^^^^^^^^^^^^^^^^^^
+lib/core/widgets/wordpad_widget.dart:130:15: Error: No named parameter with the name 'configurations'.
+              configurations: QuillEditorConfigurations(
+              ^^^^^^^^^^^^^^
+/Users/mac/.pub-cache/hosted/pub.dev/flutter_quill-11.5.0/lib/src/editor/editor.dart:154:11: Context: Found this candidate, but the arguments don't match.
+  factory QuillEditor.basic({
+          ^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/Users/mac/development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+Running Gradle task 'assembleDebug'...                              4.3s
+Error: Gradle task assembleDebug failed with exit code 1

@@ -1,6 +1,7 @@
 import 'package:cmit/core/auth_service.dart';
 import 'package:cmit/core/local_storage.dart';
 import 'package:cmit/features/auth/model/login_model.dart';
+import 'package:cmit/services/notification_service.dart';
 
 class AuthPresenter {
   /// ✅ **User Login (Supports Email or Phone)**
@@ -15,6 +16,8 @@ class AuthPresenter {
           await LocalStorage.saveToken(response['token']);
           await LocalStorage.saveUser(response['user']);
         }
+
+        await NotificationService().registerSavedToken();
 
         return {'success': true, 'message': response['message'] ?? "Login successful!"};
       }

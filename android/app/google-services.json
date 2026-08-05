@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "239763444487",
+    "project_id": "cmit-49ca1",
+    "storage_bucket": "cmit-49ca1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:239763444487:android:f20d93625727591c382ba2",
+        "android_client_info": {
+          "package_name": "com.cmit.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXCEU59pKtdLOykDBA9C58Q0jJfOMEJ2Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
