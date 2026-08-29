@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:cmit/config/theme.dart';
+import 'package:cmit/config/api.dart';
 import 'package:cmit/core/required_document_upload_service.dart';
 import '../requested_documents.dart';
 
@@ -33,8 +34,6 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
   late List<Map<String, dynamic>> documents;
   final Set<int> _uploadingIndices = <int>{};
 
-  static const String baseUrl = 'https://cmit.sata.pk';
-
   @override
   void initState() {
     super.initState();
@@ -56,12 +55,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
   }
 
   String _getFullUrl(String? path) {
-    if (path == null || path.isEmpty) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return '$baseUrl/$cleanPath';
+    return ApiConfig.getFullUrl(path);
   }
 
   bool _hasAttachments(Map<String, dynamic> doc) {
@@ -636,12 +630,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
       });
 
       // Construct full URL
-      String fullUrl = widget.pdfUrl;
-      if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
-        // Remove leading slash if present to avoid double slashes
-        final cleanPath = fullUrl.startsWith('/') ? fullUrl.substring(1) : fullUrl;
-        fullUrl = 'https://cmit.sata.pk/$cleanPath';
-      }
+      String fullUrl = ApiConfig.getFullUrl(widget.pdfUrl);
 
       debugPrint('Downloading PDF from: $fullUrl');
 

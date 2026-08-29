@@ -1,12 +1,28 @@
 class ApiConfig {
-  // Centralized base URL - change this when needed
-  static const String _baseUrl = "https://cmit.sata.pk/api/v1";
+  // Centralized base host / server URL - change this when needed
+  static const String serverUrl = "https://cmit.sata.pk";
+
+  // Centralized base API URL
+  static const String _baseUrl = "$serverUrl/api/v1";
 
   // For assets like department_logo
-  static const String assetBaseUrl = "$_baseUrl";
+  static const String assetBaseUrl = _baseUrl;
 
   // Full API base URL
   static const String baseApiUrl = _baseUrl;
+
+  // Helper method to resolve full URLs for paths, documents, annexes, and storage files
+  static String getFullUrl(String? path, {bool ensureStorage = false}) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    if (ensureStorage && !cleanPath.startsWith('storage/')) {
+      return '$serverUrl/storage/$cleanPath';
+    }
+    return '$serverUrl/$cleanPath';
+  }
 }
 
 class API {

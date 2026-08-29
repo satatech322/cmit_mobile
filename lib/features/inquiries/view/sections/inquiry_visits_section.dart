@@ -1,6 +1,7 @@
 // lib/features/inquiries/view/sections/inquiry_visits_section.dart
 import 'package:flutter/material.dart';
 import 'package:cmit/config/theme.dart';
+import 'package:cmit/config/api.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
 
@@ -28,7 +29,6 @@ class InquiryVisitsSection extends StatefulWidget {
 
 class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
   final Map<int, bool> _visitExpansionState = {};
-  static const String baseUrl = 'https://cmit.sata.pk';
 
   @override
   void initState() {
@@ -47,15 +47,7 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
   }
 
   String _getFullUrl(String? path) {
-    if (path == null || path.isEmpty) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    if (cleanPath.startsWith('storage/')) {
-      return '$baseUrl/$cleanPath';
-    }
-    return '$baseUrl/storage/$cleanPath';
+    return ApiConfig.getFullUrl(path, ensureStorage: true);
   }
 
   @override

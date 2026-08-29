@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:cmit/config/theme.dart';
+import 'package:cmit/config/api.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
 import '../add_annex.dart';
@@ -31,8 +32,6 @@ class InquiryAnnexSection extends StatefulWidget {
 }
 
 class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
-  static const String baseUrl = 'https://cmit.sata.pk';
-
   @override
   void didUpdateWidget(covariant InquiryAnnexSection oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -45,12 +44,7 @@ class _InquiryAnnexSectionState extends State<InquiryAnnexSection> {
   }
 
   String _getFullUrl(String? path) {
-    if (path == null || path.isEmpty) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return '$baseUrl/$cleanPath';
+    return ApiConfig.getFullUrl(path);
   }
 
   void _navigateToAddAnnex() async {
@@ -688,11 +682,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
         hasError = false;
       });
 
-      String fullUrl = widget.pdfUrl;
-      if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
-        final cleanPath = fullUrl.startsWith('/') ? fullUrl.substring(1) : fullUrl;
-        fullUrl = 'https://cmit.sata.pk/$cleanPath';
-      }
+      String fullUrl = ApiConfig.getFullUrl(widget.pdfUrl);
 
       debugPrint('Downloading PDF from: $fullUrl');
 
