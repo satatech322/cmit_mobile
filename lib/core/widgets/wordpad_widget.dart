@@ -12,7 +12,7 @@ class WordpadWidget extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     this.placeholder = 'Enter details...',
-    this.minHeight = 300,
+    this.minHeight = 250,
   });
 
   @override
@@ -36,25 +36,16 @@ class _WordpadWidgetState extends State<WordpadWidget> {
   }
 
   void _onFocusChanged() {
-    if (mounted) {
+    if (mounted && _isFocused != widget.focusNode.hasFocus) {
       setState(() {
         _isFocused = widget.focusNode.hasFocus;
       });
+    }
+  }
 
-      if (_isFocused) {
-        // Wait longer for keyboard to fully animate up
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            Scrollable.ensureVisible(
-              context,
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeOutQuart,
-              alignment: 0.0, // Force align to top
-              alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
-            );
-          }
-        });
-      }
+  void _requestFocusAndMoveCursor() {
+    if (!widget.focusNode.hasFocus) {
+      widget.focusNode.requestFocus();
     }
   }
 
@@ -64,7 +55,10 @@ class _WordpadWidgetState extends State<WordpadWidget> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _isFocused ? const Color(0xFF014323) : const Color(0xFFE0E0E0)),
+        border: Border.all(
+          color: _isFocused ? const Color(0xFF014323) : const Color(0xFFE0E0E0),
+          width: _isFocused ? 1.5 : 1.0,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -75,66 +69,63 @@ class _WordpadWidgetState extends State<WordpadWidget> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Toolbar
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            child: _isFocused
-                ? Column(
-                    children: [
-                      Container(
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF8F9FA),
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                        ),
-                        child: QuillSimpleToolbar(
-                          controller: widget.controller,
-                          config: QuillSimpleToolbarConfig(
-                            showFontFamily: false,
-                            showFontSize: false,
-                            showColorButton: false,
-                            showSubscript: false,
-                            showSuperscript: false,
-                            showSearchButton: false,
-                            showSmallButton: false,
-                            showInlineCode: false,
-                            showStrikeThrough: false,
-                            showDirection: false,
-                            showDividers: false,
-                            showCodeBlock: false,
-                            showQuote: false,
-                            showLink: false,
-                            showAlignmentButtons: true,
-                            showBoldButton: true,
-                            showItalicButton: true,
-                            showUnderLineButton: true,
-                            showListBullets: true,
-                            showListNumbers: true,
-                            showUndo: true,
-                            showRedo: true,
-                            showClearFormat: false,
-                            showHeaderStyle: false,
-                            showIndent: true,
-                          ),
-                        ),
-                      ),
-                      const Divider(height: 1),
-                    ],
-                  )
-                : const SizedBox.shrink(),
-          ),
-          // Editor
+          // Toolbar - Always visible and accessible without layout shifts
           Container(
-            constraints: BoxConstraints(minHeight: widget.minHeight),
-            child: QuillEditor.basic(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
+            ),
+            child: QuillSimpleToolbar(
               controller: widget.controller,
-              focusNode: widget.focusNode,
-              config: QuillEditorConfig(
-                placeholder: widget.placeholder,
-                padding: const EdgeInsets.all(16),
-                autoFocus: false,
-                expands: false,
-                scrollable: true,
+              config: const QuillSimpleToolbarConfig(
+                showFontFamily: false,
+                showFontSize: false,
+                showColorButton: false,
+                showSubscript: false,
+                showSuperscript: false,
+                showSearchButton: false,
+                showSmallButton: false,
+                showInlineCode: false,
+                showStrikeThrough: false,
+                showDirection: false,
+                showDividers: false,
+                showCodeBlock: false,
+                showQuote: false,
+                showLink: false,
+                showAlignmentButtons: true,
+                showBoldButton: true,
+                showItalicButton: true,
+                showUnderLineButton: true,
+                showListBullets: true,
+                showListNumbers: true,
+                showUndo: true,
+                showRedo: true,
+                showClearFormat: false,
+                showHeaderStyle: false,
+                showIndent: true,
+              ),
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFE5E5E5)),
+          // Editor Area - Fully clickable anywhere in the box
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _requestFocusAndMoveCursor,
+            child: Container(
+              constraints: BoxConstraints(minHeight: widget.minHeight),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: QuillEditor.basic(
+                controller: widget.controller,
+                focusNode: widget.focusNode,
+                config: QuillEditorConfig(
+                  placeholder: widget.placeholder,
+                  padding: EdgeInsets.zero,
+                  autoFocus: false,
+                  expands: false,
+                  scrollable: false,
+                ),
               ),
             ),
           ),

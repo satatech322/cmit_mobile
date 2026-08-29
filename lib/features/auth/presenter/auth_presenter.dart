@@ -13,8 +13,12 @@ class AuthPresenter {
 
       if (response['success'] == true) {
         if (rememberMe) {
-          await LocalStorage.saveToken(response['token']);
-          await LocalStorage.saveUser(response['user']);
+          if (response['token'] != null) {
+            await LocalStorage.saveToken(response['token']);
+          }
+          if (response['user'] != null) {
+            await LocalStorage.saveUser(response['user']);
+          }
         }
 
         await NotificationService().registerSavedToken();

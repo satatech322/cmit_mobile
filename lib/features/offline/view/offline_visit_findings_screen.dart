@@ -47,8 +47,9 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
   }
 
   void _loadExistingData() {
-    final existingContent =
+    final rawContent =
         widget.visit['findings_proceedings_recommendations']?.toString() ?? '';
+    final existingContent = QuillToHtmlConverter.htmlToPlainText(rawContent);
 
     final doc = quill.Document();
     if (existingContent.isNotEmpty) {
@@ -458,8 +459,7 @@ class _OfflineVisitFindingsScreenState extends State<OfflineVisitFindingsScreen>
                 ),
               ),
             ),
-            if (MediaQuery.of(context).viewInsets.bottom == 0)
-              _buildBottomBar(),
+            _buildBottomBar(),
           ],
         ),
       ),

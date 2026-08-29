@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cmit/config/api.dart';
 import 'package:cmit/core/finding_update_service.dart'; // Adjust path if needed
 import 'package:cmit/core/widgets/wordpad_widget.dart';
 import 'package:cmit/core/utils/html_converter.dart';
@@ -55,7 +56,11 @@ class _EditFindingScreenState extends State<EditFindingScreen> {
       final deltaJson = jsonDecode(findingText);
       document = Document.fromJson(deltaJson);
     } catch (e) {
-      document = Document()..insert(0, findingText);
+      final cleanText = QuillToHtmlConverter.htmlToPlainText(findingText);
+      document = Document();
+      if (cleanText.isNotEmpty) {
+        document.insert(0, cleanText);
+      }
     }
 
     _controller = QuillController(
@@ -302,13 +307,12 @@ class _EditFindingScreenState extends State<EditFindingScreen> {
                   _buildQuillEditor(),
                   const SizedBox(height: 8),
                   if (totalImages > 0) _buildImagePreview(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
-          if (MediaQuery.of(context).viewInsets.bottom == 0)
-            _buildBottomBar(totalImages),
+          _buildBottomBar(totalImages),
         ],
       ),
     );
@@ -413,7 +417,7 @@ class _EditFindingScreenState extends State<EditFindingScreen> {
               // Existing Images
               ..._existingImages.asMap().entries.map((entry) {
                 int idx = entry.key;
-                String url = entry.value;
+                String url = ApiConfig.getFullUrl(entry.value, ensureStorage: true);
                 return Stack(
                   children: [
                     Container(

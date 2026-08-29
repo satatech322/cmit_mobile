@@ -4,7 +4,7 @@ import 'package:cmit/features/auth/model/login_model.dart';
 import 'package:cmit/config/api.dart';
 
 class AuthService {
-  /// ✅ **User Login (Updated for Nested API Response Structure)**
+  /// ✅ **User Login (Supports flat and nested API response structures)**
   static Future<Map<String, dynamic>> login(LoginModel user) async {
     try {
       final response = await ApiService.post(
@@ -15,37 +15,78 @@ class AuthService {
 
       print("🔹 API Login Response: ${response.toString()}");
 
-      // ✅ Check success and extract data
+      // Check if API call returned a response
       if (response['success'] == true && response.containsKey('data')) {
         final responseData = response['data'];
 
-        // ✅ Extract user and token from nested structure
-        if (responseData['status'] == true && responseData.containsKey('data') && responseData.containsKey('token')) {
-          final userData = responseData['data'] as Map<String, dynamic>;
-          final token = responseData['token'] as String;
+        if (responseData is Map) {
+          // 1. Extract Token
+          String? token;
+          if (responseData['token'] is String && (responseData['token'] as String).isNotEmpty) {
+            token = responseData['token'];
+          } else if (responseData['data'] is Map && responseData['data']['token'] is String && (responseData['data']['token'] as String).isNotEmpty) {
+            token = responseData['data']['token'];
+          }
 
-          // ✅ Save token & user details
-          await LocalStorage.saveToken(token);
-          await LocalStorage.saveUser(userData);
+          // 2. Extract User Data
+          Map<String, dynamic>? userData;
+          if (responseData['data'] is Map<String, dynamic>) {
+            userData = Map<String, dynamic>.from(responseData['data']);
+          } else if (responseData['data'] is Map) {
+            userData = Map<String, dynamic>.from(responseData['data'] as Map);
+          } else if (responseData['user'] is Map) {
+            userData = Map<String, dynamic>.from(responseData['user'] as Map);
+          }
 
-          return {
-            'success': true,
-            'message': responseData['message'] ?? "Login successful",
-            'token': token,
-            'user': userData,
-          };
-        } else {
-          return {
-            'success': false,
-            'message': responseData['message'] ?? "Invalid response structure from server."
-          };
+          // 3. Evaluate Status & Codes
+          final dynamic status = responseData['status'];
+          final dynamic responseCode = responseData['response_Code'] ?? responseData['response_code'] ?? responseData['responseCode'];
+
+          final bool isStatusSuccess = status == true || status == 1 || status == '1' || status == 'true' || status == 'success';
+          final bool isCodeSuccess = responseCode == '00' || responseCode == 0 || responseCode == '0' || responseCode == 200 || responseCode == '200';
+
+          // If token is present and no failure was indicated
+          if (token != null && (isStatusSuccess || isCodeSuccess || (status == null && responseCode == null))) {
+            await LocalStorage.saveToken(token);
+            if (userData != null) {
+              await LocalStorage.saveUser(userData);
+            }
+
+            final successMessage = ApiService.extractErrorMessage(
+              responseData,
+              defaultMessage: "Login successful",
+            );
+
+            return {
+              'success': true,
+              'message': successMessage,
+              'token': token,
+              if (userData != null) 'user': userData,
+            };
+          } else {
+            // Failed response from backend (e.g. invalid credentials)
+            final errorMessage = ApiService.extractErrorMessage(
+              responseData,
+              defaultMessage: "Invalid login credentials.",
+            );
+
+            return {
+              'success': false,
+              'message': errorMessage,
+            };
+          }
         }
       }
 
-      // Handle failure case
+      // Handle failure case (e.g. network/server error or 4xx/5xx responses)
+      final errorMessage = ApiService.extractErrorMessage(
+        response['data'] ?? response,
+        defaultMessage: response['message']?.toString() ?? "Invalid email or password.",
+      );
+
       return {
         'success': false,
-        'message': response['message'] ?? "Invalid email or password."
+        'message': errorMessage,
       };
     } catch (e, stackTrace) {
       print("❌ AuthService: Login Error - $e\nStackTrace: $stackTrace");

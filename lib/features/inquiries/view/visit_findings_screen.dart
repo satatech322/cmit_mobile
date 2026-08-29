@@ -36,8 +36,9 @@ class _VisitFindingsScreenState extends State<VisitFindingsScreen> {
   }
 
   void _loadExistingData() {
-    final existingContent =
+    final rawContent =
         widget.visit['findings_proceedings_recommendations']?.toString() ?? '';
+    final existingContent = QuillToHtmlConverter.htmlToPlainText(rawContent);
 
     final doc = quill.Document();
     if (existingContent.isNotEmpty) {
@@ -362,14 +363,12 @@ class _VisitFindingsScreenState extends State<VisitFindingsScreen> {
                     _buildFindingsEditor(),
                     const SizedBox(height: 12),
                     if (_selectedImages.isNotEmpty) _buildImagePreview(),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
             ),
-            // Only show bottom bar when keyboard is closed
-            if (MediaQuery.of(context).viewInsets.bottom == 0)
-              _buildBottomBar(),
+            _buildBottomBar(),
           ],
         ),
       ),

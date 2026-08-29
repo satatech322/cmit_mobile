@@ -110,21 +110,95 @@ class ApiService {
     }
   }
 
+  /// Centralized helper to extract error or informative message from API responses
+  static String extractErrorMessage(dynamic data, {String defaultMessage = "Something went wrong. Please try again."}) {
+    if (data == null) return defaultMessage;
+    if (data is String) {
+      final trimmed = data.trim();
+      return trimmed.isNotEmpty ? trimmed : defaultMessage;
+    }
+    if (data is Map) {
+      // 1. Common message keys (case variations)
+      for (final key in [
+        'Response_Message',
+        'response_message',
+        'Response_message',
+        'responseMessage',
+        'message',
+        'Message',
+        'detail',
+        'details',
+        'msg',
+        'error_description'
+      ]) {
+        if (data[key] != null && data[key].toString().trim().isNotEmpty) {
+          return data[key].toString().trim();
+        }
+      }
+
+      // 2. Descriptive status strings (e.g. "Invalid Username or Password")
+      if (data['status'] is String) {
+        final statusStr = (data['status'] as String).trim();
+        final lower = statusStr.toLowerCase();
+        if (statusStr.isNotEmpty &&
+            lower != 'error' &&
+            lower != 'failed' &&
+            lower != 'failure' &&
+            lower != 'false' &&
+            lower != '0' &&
+            lower != 'success' &&
+            lower != 'true' &&
+            lower != 'ok') {
+          return statusStr;
+        }
+      }
+
+      // 3. Error field
+      if (data['error'] != null) {
+        if (data['error'] is String && (data['error'] as String).trim().isNotEmpty) {
+          return (data['error'] as String).trim();
+        } else if (data['error'] is Map) {
+          return extractErrorMessage(data['error'], defaultMessage: defaultMessage);
+        }
+      }
+
+      // 4. Nested validation errors (e.g. Laravel {"errors": {"email": ["..."]}})
+      if (data['errors'] != null) {
+        if (data['errors'] is Map) {
+          final errorsMap = data['errors'] as Map;
+          for (var value in errorsMap.values) {
+            if (value is List && value.isNotEmpty) {
+              final first = value.first.toString().trim();
+              if (first.isNotEmpty) return first;
+            } else if (value is String && value.trim().isNotEmpty) {
+              return value.trim();
+            }
+          }
+        } else if (data['errors'] is List && (data['errors'] as List).isNotEmpty) {
+          final first = (data['errors'] as List).first.toString().trim();
+          if (first.isNotEmpty) return first;
+        } else if (data['errors'] is String && (data['errors'] as String).trim().isNotEmpty) {
+          return (data['errors'] as String).trim();
+        }
+      }
+    }
+    return defaultMessage;
+  }
+
   /// Centralized Dio error handling
   static Map<String, dynamic> _handleDioError(DioException e) {
     if (e.response != null) {
       print("❌ API Error [${e.response?.statusCode}]: ${e.response?.data}");
       final data = e.response?.data;
-      String message;
-      if (data is Map) {
-        message = data['message']?.toString() ?? "Something went wrong";
-      } else {
-        message = "Server returned an error (${e.response?.statusCode}). Please try again.";
-      }
+      final message = extractErrorMessage(
+        data,
+        defaultMessage: "Server returned an error (${e.response?.statusCode}). Please try again.",
+      );
       return {
         'success': false,
         'message': message,
         'status': e.response?.statusCode,
+        'data': data,
       };
     } else if (e.type == DioExceptionType.connectionTimeout) {
       return {'success': false, 'message': "Connection timeout. Please try again."};

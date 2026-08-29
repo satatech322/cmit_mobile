@@ -48,6 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = false);
 
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         if (response['success'] == true) {
           Navigator.pushNamedAndRemoveUntil(
             context,

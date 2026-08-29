@@ -1,4 +1,3 @@
-import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:flutter_quill/quill_delta.dart';
 
 class QuillToHtmlConverter {
@@ -35,5 +34,22 @@ class QuillToHtmlConverter {
     }
     
     return html.toString();
+  }
+
+  /// Strip HTML tags and entities back to plain text for Quill editor
+  static String htmlToPlainText(String html) {
+    if (html.isEmpty) return '';
+    return html
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'</p>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'<p[^>]*>', caseSensitive: false), '')
+        .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .trim();
   }
 }

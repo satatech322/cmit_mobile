@@ -42,7 +42,8 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
     for (int i = 0; i < findingsList.length; i++) {
       final finding = findingsList[i];
       final user = (finding['user'] ?? 'Unknown').toString();
-      final findingsText = (finding['findings'] ?? '').toString();
+      final rawText = (finding['findings'] ?? '').toString();
+      final findingsText = QuillToHtmlConverter.htmlToPlainText(rawText);
 
       if (i > 0) combinedFindings += '\n\n';
       combinedFindings += 'Finding #${i + 1} - $user\n$findingsText';
@@ -167,12 +168,12 @@ class _FinalizedFindingScreenState extends State<FinalizedFindingScreen> {
                     _buildSummaryInfo(findingsList.length),
                     const SizedBox(height: 12),
                     _buildQuillEditor(),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
             ),
-            if (MediaQuery.of(context).viewInsets.bottom == 0)
-              _buildBottomBar(),
+            _buildBottomBar(),
           ],
         ),
       ),

@@ -533,6 +533,11 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
         if (attachment is! Map<String, dynamic>) return const SizedBox.shrink();
         final String link = (attachment['link'] ?? '').toString();
         final fullUrl = _getFullUrl(link);
+        final bool isImage = link.endsWith('.jpg') ||
+            link.endsWith('.png') ||
+            link.endsWith('.jpeg') ||
+            link.endsWith('.webp');
+
         return InkWell(
           onTap: () => _openAttachment(fullUrl, 'Attachment'),
           child: Container(
@@ -542,12 +547,29 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade300),
-              image: (link.endsWith('.jpg') || link.endsWith('.png') || link.endsWith('.jpeg')) ?
-                   DecorationImage(image: NetworkImage(fullUrl), fit: BoxFit.cover) : null,
             ),
-            child: (link.endsWith('.jpg') || link.endsWith('.png') || link.endsWith('.jpeg')) 
-                ? null 
-                : const Center(child: Icon(Icons.insert_drive_file, color: Colors.grey)),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: isImage
+                  ? Image.network(
+                      fullUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Center(
+                        child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 28),
+                      ),
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                    )
+                  : const Center(child: Icon(Icons.insert_drive_file, color: Colors.grey)),
+            ),
           ),
         );
       }).toList(),
