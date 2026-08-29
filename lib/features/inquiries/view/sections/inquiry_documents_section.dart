@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:cmit/config/theme.dart';
 import 'package:cmit/config/api.dart';
+import 'package:cmit/core/local_storage.dart';
 import 'package:cmit/core/required_document_upload_service.dart';
 import '../requested_documents.dart';
 
@@ -532,7 +533,7 @@ class _InquiryDocumentsSectionState extends State<InquiryDocumentsSection> {
 }
 
 // Image Viewer Screen
-class ImageViewerScreen extends StatelessWidget {
+class ImageViewerScreen extends StatefulWidget {
   final String imageUrl;
   final String title;
 
@@ -543,52 +544,114 @@ class ImageViewerScreen extends StatelessWidget {
   });
 
   @override
+  State<ImageViewerScreen> createState() => _ImageViewerScreenState();
+}
+
+class _ImageViewerScreenState extends State<ImageViewerScreen> {
+  String? _token;
+  bool _isLoading = true;
+  Key _imageKey = UniqueKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchToken();
+  }
+
+  Future<void> _fetchToken() async {
+    final token = await LocalStorage.getToken();
+    if (mounted) {
+      setState(() {
+        _token = token;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _retry() {
+    setState(() {
+      _imageKey = UniqueKey();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final headers = _token != null ? {'Authorization': 'Bearer $_token'} : null;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(title),
+        title: Text(widget.title),
         elevation: 0,
       ),
-      body: Center(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.contain,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                      : null,
-                  color: Colors.white,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  widget.imageUrl,
+                  key: _imageKey,
+                  headers: headers,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.broken_image_outlined, color: Colors.white70, size: 56),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Failed to load image',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Server returned 403 Forbidden or file not accessible.\n${widget.imageUrl}',
+                              style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: _retry,
+                              icon: const Icon(Icons.refresh, size: 18),
+                              label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.white, size: 48),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load image',
-                      style: TextStyle(color: Colors.grey[400]),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 }

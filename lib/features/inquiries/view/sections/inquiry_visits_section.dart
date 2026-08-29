@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cmit/config/theme.dart';
 import 'package:cmit/config/api.dart';
+import 'package:cmit/core/local_storage.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
 
@@ -29,10 +30,19 @@ class InquiryVisitsSection extends StatefulWidget {
 
 class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
   final Map<int, bool> _visitExpansionState = {};
+  String? _authToken;
 
   @override
   void initState() {
     super.initState();
+    _loadAuthToken();
+  }
+
+  Future<void> _loadAuthToken() async {
+    final token = await LocalStorage.getToken();
+    if (mounted && token != null) {
+      setState(() => _authToken = token);
+    }
   }
 
   @override
@@ -553,6 +563,9 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
               child: isImage
                   ? Image.network(
                       fullUrl,
+                      headers: _authToken != null
+                          ? {'Authorization': 'Bearer $_authToken'}
+                          : null,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => const Center(
                         child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 28),
@@ -617,7 +630,7 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
 }
 
 // Image Viewer Screen for Findings
-class FindingImageViewer extends StatelessWidget {
+class FindingImageViewer extends StatefulWidget {
   final String imageUrl;
   final String title;
 
@@ -628,52 +641,114 @@ class FindingImageViewer extends StatelessWidget {
   });
 
   @override
+  State<FindingImageViewer> createState() => _FindingImageViewerState();
+}
+
+class _FindingImageViewerState extends State<FindingImageViewer> {
+  String? _token;
+  bool _isLoading = true;
+  Key _imageKey = UniqueKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchToken();
+  }
+
+  Future<void> _fetchToken() async {
+    final token = await LocalStorage.getToken();
+    if (mounted) {
+      setState(() {
+        _token = token;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _retry() {
+    setState(() {
+      _imageKey = UniqueKey();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final headers = _token != null ? {'Authorization': 'Bearer $_token'} : null;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(title),
+        title: Text(widget.title),
         elevation: 0,
       ),
-      body: Center(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.contain,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                      : null,
-                  color: Colors.white,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  widget.imageUrl,
+                  key: _imageKey,
+                  headers: headers,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.broken_image_outlined, color: Colors.white70, size: 56),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Failed to load image',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Server returned 403 Forbidden or file not accessible.\n${widget.imageUrl}',
+                              style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: _retry,
+                              icon: const Icon(Icons.refresh, size: 18),
+                              label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF014323),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.white, size: 48),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load image',
-                      style: TextStyle(color: Colors.grey[400]),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 }
