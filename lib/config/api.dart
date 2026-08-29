@@ -54,6 +54,7 @@ class API {
   static const String uploadAnnexFile = "${ApiConfig.baseApiUrl}/upload/annex/file";
 
   static const String storeFinalizedFindingInquiry = "${ApiConfig.baseApiUrl}/store/finding/finalized/inquiries";
+  static const String updateFinalizedFindingInquiry = "${ApiConfig.baseApiUrl}/update/finding/finalized/inquiries";
 
   // Inside class API (add this line)
   static const String getInquiryStatistics = "${ApiConfig.baseApiUrl}/get/inquiry/statistics";

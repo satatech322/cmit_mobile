@@ -21,6 +21,7 @@ import 'add_visits.dart';
 import 'visit_findings_screen.dart';
 import 'edit_finding_screen.dart';
 import 'finalized_finding_screen.dart';
+import 'edit_finalized_finding_screen.dart';
 
 class InquiryDetailsScreen extends StatefulWidget {
   final AssignToMeModel inquiry;
@@ -225,6 +226,27 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
           _areFindingsFinalized = true;
           allVisits = i.visits;
         });
+        _refreshData();
+      }
+    });
+  }
+
+  void _navigateToEditFinalizedFindings(String currentHtml) {
+    if (!InquiryPermissions.canFinalizeFindings(i)) {
+      _showPermissionError('Only chairperson can edit finalized findings');
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditFinalizedFindingScreen(
+          inquiry: i,
+          initialHtmlContent: currentHtml,
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
         _refreshData();
       }
     });
@@ -712,7 +734,6 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -738,20 +759,47 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                       ],
                     ),
                   ),
-                  if (userName.isNotEmpty)
-                    Row(
-                      children: [
-                        Icon(Icons.person_outline, size: 14, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Text(
-                          userName,
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
+                  const Spacer(),
+                  if (userName.isNotEmpty) ...[
+                    Icon(Icons.person_outline, size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      userName,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (InquiryPermissions.canFinalizeFindings(i))
+                    InkWell(
+                      onTap: () => _navigateToEditFinalizedFindings(content),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF014323).withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF014323).withOpacity(0.2)),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.edit_outlined, size: 14, color: Color(0xFF014323)),
+                            SizedBox(width: 4),
+                            Text(
+                              "Edit",
+                              style: TextStyle(
+                                color: Color(0xFF014323),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                 ],
               ),

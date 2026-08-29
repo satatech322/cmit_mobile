@@ -58,4 +58,42 @@ class FinalizedFindingService {
       };
     }
   }
+
+  /// Update Finalized Finding (POST /api/v1/update/finding/finalized/inquiries)
+  static Future<Map<String, dynamic>> updateFinalizedFinding({
+    required int inquiryId,
+    required String combinedFindings,
+  }) async {
+    try {
+      final payload = {
+        'inquiry_id': inquiryId,
+        'combined_findings': combinedFindings.trim(),
+      };
+
+      final response = await ApiService.post(
+        API.updateFinalizedFindingInquiry,
+        payload,
+        withAuth: true,
+      );
+
+      if (response['success'] == true) {
+        GlobalRefreshEvent.instance.notify();
+        return {
+          'success': true,
+          'message': response['message'] ?? 'Inquiry finalized finding updated successfully',
+          'data': response['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response['message'] ?? 'Failed to update finalized finding',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error. Please try again.',
+      };
+    }
+  }
 }
