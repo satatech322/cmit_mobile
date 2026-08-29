@@ -16,24 +16,20 @@ class InquiryPermissions {
     return inquiry.isChairperson;
   }
 
-  // ✅ UPDATED: Only the user who created the finding can edit it
-  // Chairperson CANNOT edit other users' findings
+  // ✅ UPDATED: Only the user who created the finding can edit it, UNLESS findings are already finalized
   static bool canEditFinding(AssignToMeModel inquiry, {String? findingUserId, String? currentUserId}) {
-    print("🔍 Permission Check - canEditFinding:");
-    print("  - Finding User ID: '$findingUserId'");
-    print("  - Current User ID: '$currentUserId'");
+    // If findings are already finalized, no one can edit findings anymore
+    if (inquiry.isFindingsFinalized) {
+      return false;
+    }
 
     // Only allow editing if the current user created this finding
     if (findingUserId != null && currentUserId != null) {
-      // Ensure both are non-empty
       if (findingUserId.isNotEmpty && currentUserId.isNotEmpty) {
-        final matches = findingUserId == currentUserId;
-        print("  ${matches ? '✅ Access granted' : '❌ Access denied'}: User ID match = $matches");
-        return matches;
+        return findingUserId == currentUserId;
       }
     }
 
-    print("  ❌ Access denied: No valid user ID match");
     return false;
   }
 

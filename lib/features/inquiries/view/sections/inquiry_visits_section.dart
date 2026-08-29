@@ -293,16 +293,17 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
                  "Findings (${findingsList.length})",
                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimary),
                ),
-               TextButton(
-                 onPressed: () => widget.onNavigateToFindings(visit),
-                 style: TextButton.styleFrom(
-                   padding: EdgeInsets.zero,
-                   minimumSize: Size.zero,
-                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                   foregroundColor: AppTheme.primaryColor
-                 ),
-                 child: const Text("Add", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-               ),
+                if (!widget.inquiry.isFindingsFinalized)
+                  TextButton(
+                    onPressed: () => widget.onNavigateToFindings(visit),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      foregroundColor: AppTheme.primaryColor
+                    ),
+                    child: const Text("Add", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
              ],
            ),
            const SizedBox(height: 12),

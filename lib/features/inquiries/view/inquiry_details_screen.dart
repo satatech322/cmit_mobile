@@ -146,7 +146,11 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
       findingUserId: findingUserId,
       currentUserId: _currentUserId,
     )) {
-      _showPermissionError('You can only edit your own findings');
+      _showPermissionError(
+        i.isFindingsFinalized
+            ? 'Findings are already finalized and cannot be edited.'
+            : 'You can only edit your own findings',
+      );
       return;
     }
 
