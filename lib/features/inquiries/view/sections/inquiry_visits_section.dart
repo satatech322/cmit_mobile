@@ -100,23 +100,21 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          // Timeline
-          ListView.builder(
+          ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: widget.visits.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 14),
             itemBuilder: (context, index) {
               final visit = widget.visits[index] as Map<String, dynamic>;
-              final isLast = index == widget.visits.length - 1;
-              return _buildTimelineItem(visit, index + 1, isLast);
+              return _buildVisitCard(visit, index + 1);
             },
           ),
           
           if (canAddVisit) ...[
-            const SizedBox(height: 24),
-            Container(
+            const SizedBox(height: 20),
+            SizedBox(
               width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
               child: OutlinedButton.icon(
                 onPressed: widget.onAddVisit,
                 icon: const Icon(Icons.add, size: 18),
@@ -135,143 +133,125 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
     );
   }
 
-  Widget _buildTimelineItem(Map<String, dynamic> visit, int visitNumber, bool isLast) {
+  Widget _buildVisitCard(Map<String, dynamic> visit, int visitNumber) {
     final bool isExpanded = _visitExpansionState[visitNumber] ?? false;
     final String dateStr = (visit['visit_date'] ?? '').toString();
     final String formattedDate = _formatVisitDate(dateStr);
     final String timeStr = (visit['visit_time'] ?? '').toString();
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Left Timeline strip
-          SizedBox(
-            width: 50,
-            child: Column(
-             children: [
-               Container(
-                 width: 36,
-                 height: 36,
-                 decoration: BoxDecoration(
-                   color: AppTheme.primaryColor.withOpacity(0.1),
-                   shape: BoxShape.circle,
-                   border: Border.all(color: AppTheme.primaryColor, width: 1.5),
-                 ),
-                 child: Center(
-                   child: Text(
-                     "$visitNumber",
-                     style: const TextStyle(
-                       color: AppTheme.primaryColor,
-                       fontWeight: FontWeight.bold,
-                       fontSize: 14,
-                     ),
-                   ),
-                 ),
-               ),
-               if (!isLast)
-                 Expanded(
-                   child: Container(
-                     width: 2,
-                     color: Colors.grey.shade200,
-                     margin: const EdgeInsets.symmetric(vertical: 4),
-                   ),
-                 ),
-             ], 
-            ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isExpanded ? 0.05 : 0.02),
+            blurRadius: isExpanded ? 10 : 4,
+            offset: const Offset(0, 3),
           ),
-          
-          const SizedBox(width: 12),
-          
-          // Right Content Card
-          Expanded(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Card Header (Always Visible)
+          InkWell(
+            onTap: () {
+              setState(() {
+                _visitExpansionState[visitNumber] = !isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isExpanded ? 0.05 : 0.02),
-                      blurRadius: isExpanded ? 12 : 6,
-                      offset: const Offset(0, 4),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Visit Number Badge inside the card
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.primaryColor,
+                        width: 1.5,
+                      ),
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Card Header (Always Visible)
-                    InkWell(
-                      onTap: () {
-                         setState(() {
-                           _visitExpansionState[visitNumber] = !isExpanded;
-                         });
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.calendar_today_rounded, size: 14, color: Colors.grey.shade600),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      formattedDate,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
-                                    ),
-                                  ],
-                                ),
-                                if (timeStr.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    timeStr,
-                                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                                  ),
-                                ]
-                              ],
-                            ),
-                            const Spacer(),
-                            Icon(
-                              isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                              color: Colors.grey.shade400,
-                            ),
-                          ],
+                    child: Center(
+                      child: Text(
+                        "$visitNumber",
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
                     ),
-                    
-                    // Expanded Details
-                    if (isExpanded) ...[
-                      const Divider(height: 1, indent: 16, endIndent: 16),
-                      Padding(
-                         padding: const EdgeInsets.all(16),
-                         child: Column(
-                           children: [
-                             _buildDetailRow(Icons.person_outline, "Officer", visit['officer']),
-                             const SizedBox(height: 12),
-                             _buildDetailRow(Icons.drive_eta_outlined, "Driver", visit['driver']),
-                             const SizedBox(height: 12),
-                             _buildDetailRow(Icons.directions_car_outlined, "Vehicle", visit['vehicle']),
-                           ],
-                         ),
-                      ),
-                      
-                      // Findings Section
-                      _buildFindingsSection(visit, visitNumber),
-                    ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_rounded, size: 14, color: Colors.grey.shade600),
+                            const SizedBox(width: 6),
+                            Text(
+                              formattedDate,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                        if (timeStr.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            timeStr,
+                            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                          ),
+                        ]
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      color: Colors.grey.shade600,
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+          
+          // Expanded Details
+          if (isExpanded) ...[
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildDetailRow(Icons.person_outline, "Officer", visit['officer']),
+                  const SizedBox(height: 12),
+                  _buildDetailRow(Icons.drive_eta_outlined, "Driver", visit['driver']),
+                  const SizedBox(height: 12),
+                  _buildDetailRow(Icons.directions_car_outlined, "Vehicle", visit['vehicle']),
+                ],
+              ),
+            ),
+            
+            // Findings Section
+            _buildFindingsSection(visit, visitNumber),
+          ],
         ],
       ),
     );

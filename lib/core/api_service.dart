@@ -2,19 +2,26 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../config/api.dart';
 import 'local_storage.dart';
+import 'api_logger.dart';
 
 class ApiService {
-  static final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: ApiConfig.baseApiUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30), // longer for uploads
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ),
-  );
+  static final Dio _dio = _createDio();
+
+  static Dio _createDio() {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: ApiConfig.baseApiUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 30), // longer for uploads
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+    dio.interceptors.add(ApiLogger.interceptor);
+    return dio;
+  }
 
   /// Public accessor for Dio instance (optional, if other services need it)
   static Dio get dio => _dio;
@@ -41,21 +48,17 @@ class ApiService {
         bool withAuth = true,
       }) async {
     try {
-      print("📤 Sending POST Request to: $endpoint");
-      print("📦 Request Data: ${jsonEncode(data)}");
-
       Response response = await _dio.post(
         endpoint,
         data: jsonEncode(data),
         options: Options(headers: await _getHeaders(withAuth: withAuth)),
       );
 
-      print("✅ Success! Response: ${response.data}");
       return {'success': true, 'data': response.data};
     } on DioException catch (e) {
       return _handleDioError(e);
     } catch (e) {
-      print("❌ Unexpected Error: $e");
+      ApiLogger.logInfo("Unexpected Error: $e", tag: "POST Exception");
       return {'success': false, 'message': "An unexpected error occurred."};
     }
   }
@@ -66,19 +69,16 @@ class ApiService {
         bool withAuth = true,
       }) async {
     try {
-      print("📤 Sending GET Request to: $endpoint");
-
       Response response = await _dio.get(
         endpoint,
         options: Options(headers: await _getHeaders(withAuth: withAuth)),
       );
 
-      print("✅ Success! Response: ${response.data}");
       return {'success': true, 'data': response.data};
     } on DioException catch (e) {
       return _handleDioError(e);
     } catch (e) {
-      print("❌ Unexpected Error: $e");
+      ApiLogger.logInfo("Unexpected Error: $e", tag: "GET Exception");
       return {'success': false, 'message': "An unexpected error occurred."};
     }
   }
@@ -91,8 +91,6 @@ class ApiService {
         ProgressCallback? onSendProgress,
       }) async {
     try {
-      print("📤 Sending Multipart POST to: $endpoint");
-
       Response response = await _dio.post(
         endpoint,
         data: formData,
@@ -100,12 +98,11 @@ class ApiService {
         onSendProgress: onSendProgress,
       );
 
-      print("✅ Upload Success: ${response.data}");
       return {'success': true, 'data': response.data};
     } on DioException catch (e) {
       return _handleDioError(e);
     } catch (e) {
-      print("❌ Unexpected Upload Error: $e");
+      ApiLogger.logInfo("Unexpected Upload Error: $e", tag: "Upload Exception");
       return {'success': false, 'message': "An unexpected error occurred during upload."};
     }
   }
@@ -188,7 +185,6 @@ class ApiService {
   /// Centralized Dio error handling
   static Map<String, dynamic> _handleDioError(DioException e) {
     if (e.response != null) {
-      print("❌ API Error [${e.response?.statusCode}]: ${e.response?.data}");
       final data = e.response?.data;
       final message = extractErrorMessage(
         data,
@@ -205,7 +201,6 @@ class ApiService {
     } else if (e.type == DioExceptionType.receiveTimeout) {
       return {'success': false, 'message': "Server took too long to respond."};
     } else {
-      print("❌ Network Error: ${e.message}");
       return {'success': false, 'message': "Network issue: Please check your internet connection."};
     }
   }

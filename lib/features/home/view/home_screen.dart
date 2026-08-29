@@ -11,8 +11,10 @@ import 'package:cmit/core/inquiry_statistics_service.dart';
 import 'package:cmit/features/home/model/inquiry_statistics_model.dart';
 import 'package:cmit/core/assign_to_me.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
+import 'dart:async';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/view/offline_inquiry_detail_screen.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -43,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int completedInquiries = 0;
   bool isLoadingStats = true;
 
+  StreamSubscription? _refreshSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -50,10 +54,16 @@ class _HomeScreenState extends State<HomeScreen> {
     _setGreeting();
     _searchController.addListener(_filterInquiries);
     _loadData();
+
+    _refreshSubscription = GlobalRefreshEvent.instance.refreshStream.listen((_) {
+      print("🔄 HomeScreen auto-refreshing via GlobalRefreshEvent");
+      _loadData();
+    });
   }
   
   @override
   void dispose() {
+    _refreshSubscription?.cancel();
     _searchController.removeListener(_filterInquiries);
     _searchController.dispose();
     super.dispose();

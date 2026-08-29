@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class AnnexFileService {
   /// Upload images as data URLs (data:image/jpeg;base64,...)
@@ -22,6 +23,7 @@ class AnnexFileService {
       );
 
       if (response['success']) {
+        GlobalRefreshEvent.instance.notify();
         return {
           'success': true,
           'message': response['data']['message'] ?? 'Images uploaded successfully',
@@ -76,6 +78,7 @@ class AnnexFileService {
       );
 
       if (response['success']) {
+        GlobalRefreshEvent.instance.notify();
         return {
           'success': true,
           'message': response['data']['message'] ?? 'Files uploaded successfully',
@@ -136,6 +139,7 @@ class AnnexFileService {
       );
 
       if (response['success']) {
+        GlobalRefreshEvent.instance.notify();
         return {
           'success': true,
           'message': response['data']['message'] ?? 'Files uploaded successfully',

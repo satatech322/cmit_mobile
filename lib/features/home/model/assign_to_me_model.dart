@@ -24,6 +24,7 @@ class AssignToMeModel {
   final List<dynamic> visits;
   final List<dynamic> annexes;  // ADDED
   final List<dynamic> requiredDocuments;
+  final dynamic finalizedFindings; // Map of {id, findings, user_id, user} or null
 
   const AssignToMeModel({
     required this.id,
@@ -45,6 +46,7 @@ class AssignToMeModel {
     this.visits = const [],
     this.annexes = const [],  // ADDED
     this.requiredDocuments = const [],
+    this.finalizedFindings,
   });
 
   factory AssignToMeModel.fromJson(Map<String, dynamic> json) {
@@ -68,6 +70,7 @@ class AssignToMeModel {
       visits: _parseVisits(json['visits'] ?? []),
       annexes: _parseAnnexes(json['annexes'] ?? []),  // ADDED
       requiredDocuments: json['required_documents'] ?? [],
+      finalizedFindings: json['finalizedFindings'] ?? json['finalized_findings'],
     );
   }
 
@@ -222,6 +225,7 @@ class AssignToMeModel {
       'visits': visits,
       'annexes': annexes,  // ADDED
       'required_documents': requiredDocuments,
+      'finalizedFindings': finalizedFindings,
     };
   }
 
@@ -246,6 +250,7 @@ class AssignToMeModel {
     List<dynamic>? visits,
     List<dynamic>? annexes,  // ADDED
     List<dynamic>? requiredDocuments,
+    dynamic finalizedFindings,
   }) {
     return AssignToMeModel(
       id: id ?? this.id,
@@ -267,6 +272,7 @@ class AssignToMeModel {
       visits: visits ?? this.visits,
       annexes: annexes ?? this.annexes,  // ADDED
       requiredDocuments: requiredDocuments ?? this.requiredDocuments,
+      finalizedFindings: finalizedFindings ?? this.finalizedFindings,
     );
   }
 }
@@ -274,6 +280,14 @@ class AssignToMeModel {
 // EXTENSION WITH ALL GOODIES
 extension AssignToMeModelX on AssignToMeModel {
   bool get isChairperson => userRole.toLowerCase().contains('chair');
+
+  bool get isFindingsFinalized {
+    if (finalizedFindings == null) return false;
+    if (finalizedFindings is Map) {
+      return (finalizedFindings as Map).isNotEmpty;
+    }
+    return true;
+  }
 
   String get statusText => switch (status) {
     '0' => 'Submitted',

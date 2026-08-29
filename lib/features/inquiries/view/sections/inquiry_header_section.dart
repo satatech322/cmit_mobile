@@ -117,8 +117,24 @@ class InquiryHeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool canFinalize = InquiryPermissions.canFinalizeInquiry(inquiry);
-    print("DEBUG: InquiryHeaderSection build. canFinalize: $canFinalize, userRole: ${inquiry.userRole}");
+    final canFinalize = InquiryPermissions.canFinalizeInquiry(inquiry);
+    int totalFindings = 0;
+    for (var visit in inquiry.visits) {
+      if (visit is Map<String, dynamic>) {
+        final findingsList = (visit['findings'] as List<dynamic>? ?? []);
+        if (findingsList.isNotEmpty) {
+          totalFindings += findingsList.length;
+        } else {
+          final singleFinding = (visit['findings_proceedings_recommendations'] ?? '').toString().trim();
+          if (singleFinding.isNotEmpty) {
+            totalFindings += 1;
+          }
+        }
+      }
+    }
+    final bool hasFindings = totalFindings > 0;
+
+    print("DEBUG: InquiryHeaderSection build. canFinalize: $canFinalize, userRole: ${inquiry.userRole}, totalFindings: $totalFindings");
 
     return Container(
       width: double.infinity,
@@ -162,6 +178,7 @@ class InquiryHeaderSection extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: _FinalizeButton(
+                    isEnabled: hasFindings,
                     onPressed: () {
                         print("DEBUG: Finalize button onPressed triggered");
                         _showFinalizeConfirmation(context);
@@ -295,43 +312,63 @@ class _PriorityChip extends StatelessWidget {
 
 class _FinalizeButton extends StatelessWidget {
   final VoidCallback onPressed;
+  final bool isEnabled;
 
-  const _FinalizeButton({required this.onPressed});
+  const _FinalizeButton({
+    required this.onPressed,
+    this.isEnabled = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        print("DEBUG: _FinalizeButton InkWell tapped");
-        onPressed();
-      },
+      onTap: isEnabled
+          ? () {
+              print("DEBUG: _FinalizeButton InkWell tapped");
+              onPressed();
+            }
+          : () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('At least 1 finding is required before finalizing this inquiry.'),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor,
+          color: isEnabled ? AppTheme.primaryColor : Colors.grey.shade300,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: isEnabled
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Text(
               "Finalize",
               style: TextStyle(
-                color: Colors.white,
+                color: isEnabled ? Colors.white : Colors.grey.shade600,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
             ),
-            SizedBox(width: 6),
-            Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.arrow_forward_rounded,
+              color: isEnabled ? Colors.white : Colors.grey.shade600,
+              size: 14,
+            ),
           ],
         ),
       ),

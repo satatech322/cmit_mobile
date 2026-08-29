@@ -2,6 +2,7 @@
 
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class AddRecommendationService {
   /// Add Recommendation to an Inquiry
@@ -34,6 +35,7 @@ class AddRecommendationService {
         final nestedData = response['data'] as Map<String, dynamic>;
 
         if (nestedData['success'] == true) {
+          GlobalRefreshEvent.instance.notify();
           return {
             'success': true,
             'message': nestedData['message'] ?? "Recommendation added successfully",

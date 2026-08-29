@@ -1,5 +1,6 @@
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class CompleteInquiryService {
   /// Mark an inquiry as complete
@@ -31,6 +32,7 @@ class CompleteInquiryService {
       print("✅ API Response received: $response");
 
       if (response['success'] == true) {
+        GlobalRefreshEvent.instance.notify();
         print("✅✅✅ SUCCESS! Inquiry completed");
         return {
           'success': true,

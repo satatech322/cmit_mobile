@@ -1,6 +1,7 @@
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
 import 'package:cmit/features/inquiries/model/visit_inquiry_model.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class VisitInquiryService {
   /// Save Visit for an Inquiry
@@ -35,6 +36,7 @@ class VisitInquiryService {
         final apiData = response['data'] as Map<String, dynamic>;
 
         if (apiData['success'] == true) {
+          GlobalRefreshEvent.instance.notify();
           return {
             'success': true,
             'message': apiData['message'] ?? "Visit scheduled successfully!",

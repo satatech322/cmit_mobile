@@ -1,6 +1,7 @@
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
 import 'package:cmit/features/inquiries/model/finalized_finding_model.dart'; // adjust path as needed
+import 'package:cmit/core/global_refresh_event.dart';
 
 class FinalizedFindingService {
   /// Store Finalized Finding (POST /api/v1/store/finding/finalized/inquiries)
@@ -28,6 +29,7 @@ class FinalizedFindingService {
       print("✅ Finalized finding response: $response");
 
       if (response['success'] == true) {
+        GlobalRefreshEvent.instance.notify();
         // Optional: parse returned data if API sends back the saved object
         if (response['data'] is Map<String, dynamic>) {
           final model = FinalizedFindingModel.fromJson(response['data']);

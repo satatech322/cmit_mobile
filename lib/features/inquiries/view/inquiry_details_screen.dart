@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:cmit/core/assign_to_me.dart';
 import 'package:cmit/core/global_refresh_event.dart';
 import 'package:cmit/core/complete_inquiry_service.dart';
+import 'package:cmit/core/utils/html_converter.dart';
 
 // Import section widgets
 import 'sections/inquiry_details_section.dart';
@@ -20,7 +21,6 @@ import 'add_visits.dart';
 import 'visit_findings_screen.dart';
 import 'edit_finding_screen.dart';
 import 'finalized_finding_screen.dart';
-import 'add_annex.dart';
 
 class InquiryDetailsScreen extends StatefulWidget {
   final AssignToMeModel inquiry;
@@ -39,9 +39,9 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
   late List<dynamic> allVisits = [];
   late List<dynamic> allAnnexes = [];
   String? _currentUserId;
-
   late AssignToMeModel _inquiry;
   StreamSubscription? _refreshSubscription;
+  bool _areFindingsFinalized = false;
 
   AssignToMeModel get i => _inquiry;
 
@@ -52,6 +52,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
     allVisits = i.visits;
     documents = i.requiredDocuments;
     allAnnexes = i.annexes;
+    _areFindingsFinalized = i.isFindingsFinalized;
     _loadCurrentUserId();
     
     _refreshSubscription = GlobalRefreshEvent.instance.refreshStream.listen((_) {
@@ -78,20 +79,19 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
             allVisits = _inquiry.visits;
             allAnnexes = _inquiry.annexes;
             documents = _inquiry.requiredDocuments;
+            if (_inquiry.isFindingsFinalized) {
+              _areFindingsFinalized = true;
+            }
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Data updated successfully'),
-              backgroundColor: AppTheme.primaryColor,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 1),
-            ),
-          );
         }
       } catch (e) {
         // Handle error
       }
     }
+  }
+
+  bool _checkIfFindingsFinalized() {
+    return _areFindingsFinalized || i.isFindingsFinalized;
   }
 
   Future<void> _loadCurrentUserId() async {
@@ -218,15 +218,11 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
     ).then((result) {
       if (result == true) {
         setState(() {
+          _areFindingsFinalized = true;
           allVisits = i.visits;
         });
+        _refreshData();
       }
-    });
-  }
-
-  void _refreshAnnexes() {
-    setState(() {
-      allAnnexes = i.annexes;
     });
   }
 
@@ -311,9 +307,17 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
   int _getTotalFindings() {
     int total = 0;
     for (var visit in allVisits) {
-      final visitMap = visit as Map<String, dynamic>;
-      final findingsList = (visitMap['findings'] as List<dynamic>? ?? []);
-      total += findingsList.length;
+      if (visit is Map<String, dynamic>) {
+        final findingsList = (visit['findings'] as List<dynamic>? ?? []);
+        if (findingsList.isNotEmpty) {
+          total += findingsList.length;
+        } else {
+          final singleFinding = (visit['findings_proceedings_recommendations'] ?? '').toString().trim();
+          if (singleFinding.isNotEmpty) {
+            total += 1;
+          }
+        }
+      }
     }
     return total;
   }
@@ -398,7 +402,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                 children: [
                 
                   // Hero Card (Summary)
-                  _buildHeroCard(canFinalizeInquiry),
+                  _buildHeroCard(canFinalizeInquiry, totalFindings),
                   const SizedBox(height: 24),
                   
                   // Section Title: Details
@@ -428,8 +432,8 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                     ),
                   ),
 
-                  // Finalize Findings Button (Contextual)
-                  if (canFinalizeFindings && totalFindings > 0)
+                  // Finalize Findings Button (Contextual) - Hides when already finalized (finalizedFindings != null)
+                  if (canFinalizeFindings && totalFindings > 0 && !_checkIfFindingsFinalized())
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: ElevatedButton.icon(
@@ -447,49 +451,23 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                     ),
 
                   const SizedBox(height: 24),
-                  
+
+                  // Finalized Findings Section (Visible below Field Visits when finalized)
+                  if (_checkIfFindingsFinalized() && i.finalizedFindings != null)
+                    _buildFinalizedFindingsCard(),
+
                   // Section Title: Resources
                   _buildSectionHeader("Resources", Icons.folder_open_rounded),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Annex Card
+                      // Annexes Card
                       Expanded(
                         child: _buildSmallSectionCard(
                           title: "Annexes",
                           count: allAnnexes.length,
                           icon: Icons.attach_file_rounded,
-                          onTap: () {
-                             showModalBottomSheet(
-                               context: context,
-                               isScrollControlled: true,
-                               backgroundColor: Colors.transparent,
-                               builder: (context) => Container(
-                                 height: MediaQuery.of(context).size.height * 0.8,
-                                 decoration: const BoxDecoration(
-                                   color: Colors.white,
-                                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                                 ),
-                                 child: Column(
-                                   children: [
-                                     Padding(
-                                       padding: const EdgeInsets.all(16),
-                                       child: Text("Annexes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                     ),
-                                     Expanded(
-                                       child: InquiryAnnexSection(
-                                          inquiry: i,
-                                          annexes: allAnnexes,
-                                          onNavigateToAnnexDetails: _navigateToAnnexDetails,
-                                          onEditAnnex: _editAnnex,
-                                          onAnnexAdded: _refreshAnnexes,
-                                        ),
-                                     ),
-                                   ],
-                                 ),
-                               ),
-                             );
-                          },
+                          onTap: _showAnnexesModal,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -499,37 +477,7 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
                           title: "Documents",
                           count: documents.length,
                           icon: Icons.description_rounded,
-                          onTap: () {
-                             showModalBottomSheet(
-                               context: context,
-                               isScrollControlled: true,
-                               backgroundColor: Colors.transparent,
-                               builder: (context) => Container(
-                                 height: MediaQuery.of(context).size.height * 0.8,
-                                 decoration: const BoxDecoration(
-                                   color: Colors.white,
-                                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                                 ),
-                                 child: Column(
-                                   children: [
-                                     Padding(
-                                       padding: const EdgeInsets.all(16),
-                                       child: Text("Documents", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                     ),
-                                     Expanded(
-                                       child: InquiryDocumentsSection(
-                                          initialDocuments: documents,
-                                          inquiryId: i.id,
-                                          onDocumentsChanged: (updatedDocs) {
-                                            setState(() => documents = updatedDocs);
-                                          },
-                                        ),
-                                     ),
-                                   ],
-                                 ),
-                               ),
-                             );
-                          },
+                          onTap: _showDocumentsModal,
                         ),
                       ),
                     ],
@@ -603,7 +551,9 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
     );
   }
   
-  Widget _buildHeroCard(bool canFinalize) {
+  Widget _buildHeroCard(bool canFinalize, int totalFindings) {
+    final bool hasFindings = totalFindings > 0;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -674,24 +624,161 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _showFinalizeConfirmation,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+              child: ElevatedButton.icon(
+                onPressed: hasFindings
+                    ? _showFinalizeConfirmation
+                    : () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'At least 1 finding is required before finalizing this inquiry.',
+                            ),
+                            backgroundColor: Colors.orange,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                icon: Icon(
+                  Icons.check_circle_outline,
+                  size: 18,
+                  color: hasFindings ? Colors.white : Colors.grey.shade500,
                 ),
-                child: const Text("Finalize Inquiry", style: TextStyle(fontWeight: FontWeight.w600)),
+                label: Text(
+                  "Finalize Inquiry",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: hasFindings ? Colors.white : Colors.grey.shade500,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: hasFindings ? AppTheme.primaryColor : Colors.grey.shade200,
+                  foregroundColor: hasFindings ? Colors.white : Colors.grey.shade500,
+                  elevation: hasFindings ? 2 : 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: hasFindings ? Colors.transparent : Colors.grey.shade300,
+                    ),
+                  ),
+                ),
               ),
             ),
+            if (!hasFindings) ...[
+              const SizedBox(height: 6),
+              Center(
+                child: Text(
+                  'Record at least 1 finding in Field Visits to finalize',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
           ],
         ],
       ),
     );
   }
   
+  Widget _buildFinalizedFindingsCard() {
+    final finalized = i.finalizedFindings;
+    if (finalized == null) return const SizedBox.shrink();
+
+    String content = '';
+    String userName = '';
+
+    if (finalized is Map) {
+      content = (finalized['findings'] ?? finalized['combined_findings'] ?? '').toString();
+      userName = (finalized['user'] ?? finalized['user_name'] ?? '').toString();
+    } else if (finalized is String) {
+      content = finalized;
+    }
+
+    final plainTextContent = QuillToHtmlConverter.htmlToPlainText(content);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader("Finalized Findings", Icons.fact_check_outlined),
+        _buildContentCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF014323).withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.verified_rounded, size: 15, color: Color(0xFF014323)),
+                        SizedBox(width: 6),
+                        Text(
+                          "FINALIZED",
+                          style: TextStyle(
+                            color: Color(0xFF014323),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (userName.isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, size: 14, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          userName,
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              const Divider(height: 1),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Text(
+                  plainTextContent.isNotEmpty ? plainTextContent : 'No content available.',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
   Widget _buildSectionHeader(String title, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, left: 4),

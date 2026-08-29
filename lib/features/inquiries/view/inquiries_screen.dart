@@ -8,6 +8,8 @@ import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/services/inquiry_cache_service.dart';
 import 'package:cmit/features/offline/widgets/offline_indicator.dart';
+import 'dart:async';
+import 'package:cmit/core/global_refresh_event.dart';
 import 'package:cmit/features/offline/view/offline_details_screen.dart';
 import 'package:cmit/features/offline/view/offline_inquiry_detail_screen.dart';
 
@@ -26,16 +28,23 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
   bool _isFromCache = false;
   String _error = '';
   final _searchController = TextEditingController();
+  StreamSubscription? _refreshSubscription;
 
   @override
   void initState() {
     super.initState();
     _checkConnectivityAndLoad();
     _searchController.addListener(_filter);
+
+    _refreshSubscription = GlobalRefreshEvent.instance.refreshStream.listen((_) {
+      print("🔄 InquiriesScreen auto-refreshing via GlobalRefreshEvent");
+      _loadFromAPI();
+    });
   }
 
   @override
   void dispose() {
+    _refreshSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }

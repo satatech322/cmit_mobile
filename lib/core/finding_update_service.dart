@@ -1,5 +1,6 @@
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
+import 'package:cmit/core/global_refresh_event.dart';
 
 class FindingInquiryService {
   /// Update existing finding with rich text (Delta JSON) and base64 images
@@ -25,6 +26,7 @@ class FindingInquiryService {
       );
 
       if (response['success'] == true) {
+        GlobalRefreshEvent.instance.notify();
         return {
           'success': true,
           'message': response['data']['message'] ?? 'Finding updated successfully',
