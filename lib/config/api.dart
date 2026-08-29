@@ -1,6 +1,6 @@
 class ApiConfig {
   // Centralized base URL - change this when needed
-  static const String _baseUrl = "http://192.168.18.168:8000/api/v1";
+  static const String _baseUrl = "https://cmit.sata.pk/api/v1";
 
   // For assets like department_logo
   static const String assetBaseUrl = "$_baseUrl";

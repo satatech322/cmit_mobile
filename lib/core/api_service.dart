@@ -114,9 +114,16 @@ class ApiService {
   static Map<String, dynamic> _handleDioError(DioException e) {
     if (e.response != null) {
       print("❌ API Error [${e.response?.statusCode}]: ${e.response?.data}");
+      final data = e.response?.data;
+      String message;
+      if (data is Map) {
+        message = data['message']?.toString() ?? "Something went wrong";
+      } else {
+        message = "Server returned an error (${e.response?.statusCode}). Please try again.";
+      }
       return {
         'success': false,
-        'message': e.response?.data['message'] ?? "Something went wrong",
+        'message': message,
         'status': e.response?.statusCode,
       };
     } else if (e.type == DioExceptionType.connectionTimeout) {

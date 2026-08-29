@@ -1,5 +1,5 @@
 // lib/features/offline/services/offline_service.dart
-// UPDATED: Removed all visit offline functionality - only findings remain
+// UPDATED: Removed all visit offline functionality - only findings remainx
 import 'dart:convert';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
