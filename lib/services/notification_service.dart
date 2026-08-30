@@ -22,11 +22,11 @@ class NotificationService {
 
     final token = await _messaging.getToken();
     if (token != null) {
-      await NotificationStorage.saveFcmToken(token);
+      await _registerToken(token);
     }
 
     _messaging.onTokenRefresh.listen((token) async {
-      await NotificationStorage.saveFcmToken(token);
+      await _registerToken(token);
     });
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
@@ -84,26 +84,28 @@ class NotificationService {
     final data = message.data;
     final notification = message.notification;
 
+    final String title = notification?.title ?? data['title'] ?? 'New Notification';
+    final String body = notification?.body ?? data['body'] ?? data['message'] ?? '';
+
     final payload = {
-      'title': notification?.title ?? '',
-      'body': notification?.body ?? '',
-      'type': data['type'],
-      'assessment_id': data['assessment_id'],
-      'is_ms': data['is_ms'],
+      'id': DateTime.now().millisecondsSinceEpoch,
+      'title': title,
+      'body': body,
+      'type': data['type'] ?? data['notification_type'] ?? '',
+      'inquiry_id': data['inquiry_id'] ?? data['assessment_id'] ?? data['id'] ?? '',
       'created_at': DateTime.now().toIso8601String(),
       'is_read': false,
     };
 
     await NotificationStorage.addNotification(payload);
-    await _showLocalNotification(notification, data);
+    await _showLocalNotification(title, body, data);
   }
 
   Future<void> _showLocalNotification(
-    RemoteNotification? notification,
+    String title,
+    String body,
     Map<String, dynamic> data,
   ) async {
-    if (notification == null) return;
-
     const androidDetails = AndroidNotificationDetails(
       'default_channel',
       'Default Notifications',
@@ -119,8 +121,8 @@ class NotificationService {
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notification.title,
-      notification.body,
+      title,
+      body,
       details,
       payload: jsonEncode(data),
     );

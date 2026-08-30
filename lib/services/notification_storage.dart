@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,6 +7,16 @@ class NotificationStorage {
   static const String _keyFcmToken = 'fcm_token';
 
   static SharedPreferences? _prefs;
+  static final StreamController<void> _streamController = StreamController<void>.broadcast();
+
+  /// Stream to listen to real-time notification changes across screens
+  static Stream<void> get onNotificationsChanged => _streamController.stream;
+
+  static void _notify() {
+    if (!_streamController.isClosed) {
+      _streamController.add(null);
+    }
+  }
 
   static Future<void> _init() async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -34,25 +45,36 @@ class NotificationStorage {
       _keyNotifications,
       jsonEncode(notifications),
     );
+    _notify();
   }
 
   static Future<List<Map<String, dynamic>>> getAllNotifications() async {
     await _init();
     final raw = _prefs?.getString(_keyNotifications);
     if (raw == null) return [];
-    final list = jsonDecode(raw) as List;
-    return list.cast<Map<String, dynamic>>();
+    try {
+      final list = jsonDecode(raw) as List;
+      return list.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<int> getUnreadCount() async {
+    final notifications = await getAllNotifications();
+    return notifications.where((n) => n['is_read'] != true).length;
   }
 
   static Future<void> markAsRead(int index) async {
     await _init();
     final notifications = await getAllNotifications();
-    if (index < notifications.length) {
+    if (index >= 0 && index < notifications.length) {
       notifications[index]['is_read'] = true;
       await _prefs?.setString(
         _keyNotifications,
         jsonEncode(notifications),
       );
+      _notify();
     }
   }
 
@@ -66,10 +88,25 @@ class NotificationStorage {
       _keyNotifications,
       jsonEncode(notifications),
     );
+    _notify();
+  }
+
+  static Future<void> deleteNotification(int index) async {
+    await _init();
+    final notifications = await getAllNotifications();
+    if (index >= 0 && index < notifications.length) {
+      notifications.removeAt(index);
+      await _prefs?.setString(
+        _keyNotifications,
+        jsonEncode(notifications),
+      );
+      _notify();
+    }
   }
 
   static Future<void> clearAll() async {
     await _init();
     await _prefs?.remove(_keyNotifications);
+    _notify();
   }
 }

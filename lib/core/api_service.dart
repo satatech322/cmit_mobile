@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../config/api.dart';
 import 'local_storage.dart';
 import 'api_logger.dart';
+import 'navigation_service.dart';
 
 class ApiService {
   static final Dio _dio = _createDio();
@@ -54,6 +55,13 @@ class ApiService {
         options: Options(headers: await _getHeaders(withAuth: withAuth)),
       );
 
+      if (_isUnauthenticated(response.data, response.data.toString())) {
+        NavigationService.forceLogoutToLogin(
+          message: "Session expired or unauthenticated. Please log in again.",
+        );
+        return {'success': false, 'message': 'Unauthenticated.'};
+      }
+
       return {'success': true, 'data': response.data};
     } on DioException catch (e) {
       return _handleDioError(e);
@@ -73,6 +81,13 @@ class ApiService {
         endpoint,
         options: Options(headers: await _getHeaders(withAuth: withAuth)),
       );
+
+      if (_isUnauthenticated(response.data, response.data.toString())) {
+        NavigationService.forceLogoutToLogin(
+          message: "Session expired or unauthenticated. Please log in again.",
+        );
+        return {'success': false, 'message': 'Unauthenticated.'};
+      }
 
       return {'success': true, 'data': response.data};
     } on DioException catch (e) {
@@ -97,6 +112,13 @@ class ApiService {
         options: Options(headers: await _getHeaders(withAuth: withAuth)),
         onSendProgress: onSendProgress,
       );
+
+      if (_isUnauthenticated(response.data, response.data.toString())) {
+        NavigationService.forceLogoutToLogin(
+          message: "Session expired or unauthenticated. Please log in again.",
+        );
+        return {'success': false, 'message': 'Unauthenticated.'};
+      }
 
       return {'success': true, 'data': response.data};
     } on DioException catch (e) {
@@ -182,18 +204,47 @@ class ApiService {
     return defaultMessage;
   }
 
+  static bool _isUnauthenticated(dynamic data, String message) {
+    final msgLower = message.toLowerCase();
+    if (msgLower.contains('unauthenticated') ||
+        msgLower.contains('token expired') ||
+        msgLower.contains('token has expired')) {
+      return true;
+    }
+    if (data is Map) {
+      for (final key in ['status', 'message', 'Response_Message', 'response_message', 'error', 'detail', 'msg']) {
+        final val = (data[key] ?? '').toString().toLowerCase();
+        if (val.contains('unauthenticated') ||
+            val.contains('token expired') ||
+            val.contains('token has expired')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /// Centralized Dio error handling
   static Map<String, dynamic> _handleDioError(DioException e) {
     if (e.response != null) {
+      final statusCode = e.response?.statusCode;
       final data = e.response?.data;
       final message = extractErrorMessage(
         data,
-        defaultMessage: "Server returned an error (${e.response?.statusCode}). Please try again.",
+        defaultMessage: "Server returned an error ($statusCode). Please try again.",
       );
+
+      // Automatically logout and redirect if unauthenticated / 401
+      if (statusCode == 401 || _isUnauthenticated(data, message)) {
+        NavigationService.forceLogoutToLogin(
+          message: "Session expired or unauthenticated. Please log in again.",
+        );
+      }
+
       return {
         'success': false,
         'message': message,
-        'status': e.response?.statusCode,
+        'status': statusCode,
         'data': data,
       };
     } else if (e.type == DioExceptionType.connectionTimeout) {

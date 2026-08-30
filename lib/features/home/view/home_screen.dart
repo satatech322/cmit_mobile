@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/view/offline_inquiry_detail_screen.dart';
 import 'package:cmit/core/global_refresh_event.dart';
+import 'package:cmit/services/notification_storage.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,7 +46,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int completedInquiries = 0;
   bool isLoadingStats = true;
 
+  int _unreadNotificationCount = 0;
+
   StreamSubscription? _refreshSubscription;
+  StreamSubscription? _notifSubscription;
 
   @override
   void initState() {
@@ -54,16 +58,22 @@ class _HomeScreenState extends State<HomeScreen> {
     _setGreeting();
     _searchController.addListener(_filterInquiries);
     _loadData();
+    _loadUnreadNotifications();
 
     _refreshSubscription = GlobalRefreshEvent.instance.refreshStream.listen((_) {
       print("🔄 HomeScreen auto-refreshing via GlobalRefreshEvent");
       _loadData();
+    });
+
+    _notifSubscription = NotificationStorage.onNotificationsChanged.listen((_) {
+      _loadUnreadNotifications();
     });
   }
   
   @override
   void dispose() {
     _refreshSubscription?.cancel();
+    _notifSubscription?.cancel();
     _searchController.removeListener(_filterInquiries);
     _searchController.dispose();
     super.dispose();
@@ -88,6 +98,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _greeting = 'Good Afternoon';
     } else {
       _greeting = 'Good Evening';
+    }
+  }
+
+  Future<void> _loadUnreadNotifications() async {
+    final count = await NotificationStorage.getUnreadCount();
+    if (mounted) {
+      setState(() {
+        _unreadNotificationCount = count;
+      });
     }
   }
 
@@ -439,28 +458,60 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const NotificationScreen()),
-              );
+              ).then((_) => _loadUnreadNotifications());
             },
             borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.notifications_none_rounded,
-                color: Colors.black87,
-                size: 24,
-              ),
+                  child: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Colors.black87,
+                    size: 24,
+                  ),
+                ),
+                if (_unreadNotificationCount > 0)
+                  Positioned(
+                    top: -3,
+                    right: -3,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFC62828),
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Center(
+                        child: Text(
+                          _unreadNotificationCount > 9 ? '9+' : '$_unreadNotificationCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:cmit/config/routes.dart';
+import 'package:cmit/core/navigation_service.dart';
 
 class CmitApp extends StatefulWidget {
   const CmitApp({super.key});
@@ -42,6 +43,8 @@ class _CmitAppState extends State<CmitApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: NavigationService.navigatorKey,
+      scaffoldMessengerKey: NavigationService.scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'CMIT',
       localizationsDelegates: const [
