@@ -19,7 +19,6 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
 
   // Cache info
   int _cachedInquiriesCount = 0;
-  String _lastCacheUpdate = 'Never';
   int _cacheAgeHours = 0;
   double _cacheSizeMB = 0.0;
 
@@ -51,7 +50,6 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
       setState(() {
         _isOnline = hasInternet;
         _cachedInquiriesCount = cachedInquiries?.length ?? 0;
-        _lastCacheUpdate = metadata['last_cache_time'] ?? 'Never';
         _cacheAgeHours = metadata['cache_age_hours'] ?? 0;
         _cacheSizeMB = (metadata['cache_size_bytes'] ?? 0) / (1024 * 1024);
 
@@ -460,7 +458,16 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
             color: Colors.blue,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildInfoCard(
+            title: 'Age',
+            value: _formatCacheAge(),
+            icon: Icons.access_time_rounded,
+            color: AppTheme.primaryColor,
+          ),
+        ),
+        const SizedBox(width: 10),
         Expanded(
           child: _buildInfoCard(
             title: 'Storage',
