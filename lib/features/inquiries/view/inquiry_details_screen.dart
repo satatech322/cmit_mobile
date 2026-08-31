@@ -9,6 +9,7 @@ import 'package:cmit/core/assign_to_me.dart';
 import 'package:cmit/core/global_refresh_event.dart';
 import 'package:cmit/core/complete_inquiry_service.dart';
 import 'package:cmit/core/utils/html_converter.dart';
+import 'package:cmit/core/widgets/app_dialog.dart';
 
 // Import section widgets
 import 'sections/inquiry_details_section.dart';
@@ -253,28 +254,39 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
   }
 
   void _navigateToAnnexDetails(Map<String, dynamic> annex) {
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(annex['title'] ?? 'Annex Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('ID: ${annex['id'] ?? annex['annex_id']}'),
-            const SizedBox(height: 8),
-            Text('Sort Order: ${annex['sort_order'] ?? 'N/A'}'),
-            const SizedBox(height: 8),
-            Text('Files: ${(annex['annex_files'] as List?)?.length ?? 0}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      icon: Icons.attach_file_rounded,
+      title: annex['title']?.toString().isNotEmpty == true
+          ? annex['title'].toString()
+          : 'Annex Details',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('ID: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary)),
+              Text('${annex['id'] ?? annex['annex_id'] ?? 'N/A'}', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Text('Sort Order: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary)),
+              Text('${annex['sort_order'] ?? 'N/A'}', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Text('Attached Files: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary)),
+              Text('${(annex['annex_files'] as List?)?.length ?? 0}', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+            ],
           ),
         ],
       ),
+      confirmText: 'Close',
     );
   }
 
@@ -349,31 +361,14 @@ class _InquiryDetailsScreenState extends State<InquiryDetailsScreen> with Single
   }
   
   void _showFinalizeConfirmation() {
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Finalize Inquiry'),
-          content: const Text(
-            'Are you sure you want to finalize this inquiry? This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _handleFinalize();
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-              child: const Text('Finalize', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
+      icon: Icons.check_circle_outline_rounded,
+      title: 'Finalize Inquiry',
+      message: 'Are you sure you want to finalize this inquiry? This action cannot be undone.',
+      confirmText: 'Finalize',
+      cancelText: 'Cancel',
+      onConfirm: () => _handleFinalize(),
     );
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cmit/config/theme.dart';
+import 'package:cmit/core/widgets/app_dialog.dart';
 import 'package:cmit/services/notification_storage.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -50,28 +51,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _clearAllNotifications() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear All Notifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-        content: const Text('Are you sure you want to delete all notifications? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade700,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Clear All'),
-          ),
-        ],
-      ),
+      icon: Icons.delete_sweep_rounded,
+      iconColor: AppTheme.errorColor,
+      title: 'Clear All Notifications',
+      message: 'Are you sure you want to delete all notifications? This action cannot be undone.',
+      confirmText: 'Clear All',
+      confirmButtonColor: AppTheme.errorColor,
+      cancelText: 'Cancel',
+      isDestructive: true,
     );
 
     if (confirmed == true) {

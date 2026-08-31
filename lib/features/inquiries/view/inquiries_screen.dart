@@ -10,6 +10,7 @@ import 'package:cmit/features/offline/services/inquiry_cache_service.dart';
 import 'package:cmit/features/offline/widgets/offline_indicator.dart';
 import 'dart:async';
 import 'package:cmit/core/global_refresh_event.dart';
+import 'package:cmit/core/widgets/app_dialog.dart';
 import 'package:cmit/features/offline/view/offline_details_screen.dart';
 import 'package:cmit/features/offline/view/offline_inquiry_detail_screen.dart';
 
@@ -154,35 +155,51 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
     }
 
     if (mounted) {
-      showDialog(
+      AppDialog.show(
         context: context,
-        builder: (context) => AlertDialog(
-          title: Row(
-            children: const [
-              Icon(Icons.info_outline, color: AppTheme.primaryColor, size: 24),
-              SizedBox(width: 12),
-              Text('Cache Information'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(message, style: const TextStyle(fontSize: 15)),
-              const SizedBox(height: 12),
-              Text(
-                'You are viewing offline data. Connect to internet to get the latest updates.',
-                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+        icon: Icons.info_outline_rounded,
+        title: 'Cache Information',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF014323).withOpacity(0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF014323).withOpacity(0.12)),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK', style: TextStyle(color: AppTheme.primaryColor)),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time_rounded, size: 16, color: AppTheme.primaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'You are viewing offline data. Connect to the internet to fetch latest updates and sync changes.',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+                height: 1.4,
+              ),
             ),
           ],
         ),
+        confirmText: 'Got It',
       );
     }
   }

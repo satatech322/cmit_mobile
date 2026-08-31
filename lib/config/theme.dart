@@ -122,6 +122,23 @@ class AppTheme {
       elevation: 4,
     ),
     
+    // Dialog Theme
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      elevation: 10,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      titleTextStyle: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+      ),
+      contentTextStyle: const TextStyle(
+        fontSize: 14,
+        color: textSecondary,
+        height: 1.5,
+      ),
+    ),
+
     // Bottom Sheet
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: surfaceColor,

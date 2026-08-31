@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For time formatting
+import 'package:intl/intl.dart';
+import 'package:cmit/config/theme.dart';
+import 'package:cmit/core/widgets/app_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -57,28 +59,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Handle Delete Account
   void _deleteAccount() {
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text('Are you sure you want to delete your account? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Perform deletion
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account deleted')),
-              );
-            },
-            child: Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      icon: Icons.delete_forever_rounded,
+      iconColor: AppTheme.errorColor,
+      title: 'Delete Account',
+      message: 'Are you sure you want to delete your account? This action cannot be undone.',
+      confirmText: 'Delete',
+      confirmButtonColor: AppTheme.errorColor,
+      cancelText: 'Cancel',
+      isDestructive: true,
+      onConfirm: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account deleted')),
+        );
+      },
     );
   }
 

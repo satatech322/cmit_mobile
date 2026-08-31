@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/inquiries/view/permissions.dart';
-import 'package:cmit/core/complete_inquiry_service.dart'; // ✅ Correct import
+import 'package:cmit/core/complete_inquiry_service.dart';
+import 'package:cmit/core/widgets/app_dialog.dart';
 
 class InquiryHeaderSection extends StatelessWidget {
   final AssignToMeModel inquiry;
@@ -16,63 +17,13 @@ class InquiryHeaderSection extends StatelessWidget {
 
   /// Show confirmation dialog and handle API call
   Future<void> _showFinalizeConfirmation(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppTheme.surfaceColor,
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_circle_outline, color: AppTheme.primaryColor),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Finalize Inquiry',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Are you sure you want to finalize this inquiry?\n\nThis action will mark the inquiry as completed and cannot be undone.',
-            style: TextStyle(fontSize: 15, height: 1.5, color: AppTheme.textSecondary),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.textSecondary,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text(
-                'Confirm Finalize',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
+      icon: Icons.check_circle_outline_rounded,
+      title: 'Finalize Inquiry',
+      message: 'Are you sure you want to finalize this inquiry?\n\nThis action will mark the inquiry as completed and cannot be undone.',
+      confirmText: 'Confirm Finalize',
+      cancelText: 'Cancel',
     );
     // If user confirmed
     if (confirmed == true && context.mounted) {

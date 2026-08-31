@@ -1,5 +1,7 @@
 // lib/features/offline/view/offline_details_screen.dart
 import 'package:flutter/material.dart';
+import 'package:cmit/config/theme.dart';
+import 'package:cmit/core/widgets/app_dialog.dart';
 import 'package:cmit/features/offline/services/offline_service.dart';
 import 'package:cmit/features/offline/services/inquiry_cache_service.dart';
 
@@ -163,28 +165,16 @@ class _OfflineDetailsScreenState extends State<OfflineDetailsScreen> {
   }
 
   Future<void> _clearCache() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Cache'),
-        content: const Text(
-          'Are you sure you want to clear all cached data? '
-              'This will remove offline access until you reconnect.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
+      icon: Icons.delete_outline_rounded,
+      iconColor: AppTheme.errorColor,
+      title: 'Clear Cache',
+      message: 'Are you sure you want to clear all cached data? This will remove offline access until you reconnect.',
+      confirmText: 'Clear Cache',
+      confirmButtonColor: AppTheme.errorColor,
+      cancelText: 'Cancel',
+      isDestructive: true,
     );
 
     if (confirmed != true) return;
