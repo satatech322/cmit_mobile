@@ -214,13 +214,6 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
     });
   }
 
-  void _navigateToOfflineDetails() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const OfflineDetailsScreen()),
-    ).then((_) => _checkConnectivityAndLoad());
-  }
-
   Future<void> _navigateToInquiryDetails(AssignToMeModel inquiry) async {
     final hasInternet = await OfflineService.hasInternet();
     if (!mounted) return;
@@ -250,46 +243,7 @@ class _InquiriesScreenState extends State<InquiriesScreen> {
             _buildCustomHeader(),
             
             // Offline Indicator
-            const OfflineIndicator(),
-        
-            if (!_isOnline && _isFromCache)
-              InkWell(
-                onTap: _navigateToOfflineDetails,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  color: const Color(0xFF014323),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.cloud_off, size: 18, color: Colors.white),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Offline Mode',
-                              style: TextStyle(
-                                fontSize: 13, 
-                                color: Colors.white, 
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              'Viewing cached data. Tap for details.',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, size: 20, color: Colors.white),
-                    ],
-                  ),
-                ),
-              ),
+            const OfflineIndicator(margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
             
             // Main Content Area
             Expanded(

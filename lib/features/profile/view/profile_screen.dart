@@ -5,6 +5,7 @@ import 'package:cmit/config/theme.dart';
 import 'package:cmit/core/local_storage.dart';
 import 'package:cmit/core/auth_service.dart';
 import 'package:cmit/core/profile_service.dart';
+import 'package:cmit/features/offline/widgets/offline_indicator.dart';
 import 'package:cmit/features/profile/model/profile_model.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -36,7 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (!mounted) return;
 
-    if (result['success']) {
+    if (result['success'] == true && result['data'] != null) {
       setState(() {
         _profile = result['data'] as ProfileModel;
 
@@ -54,9 +55,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } else {
       print("Failed to load profile: ${result['message']}");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Failed to load profile')),
-      );
+      if (_profile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Failed to load profile')),
+        );
+      }
     }
 
     setState(() => _isLoading = false);
@@ -76,6 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (success) {
         await LocalStorage.logout();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Logged out successfully')),
         );
@@ -83,6 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } else {
         // Force local logout if server fails
         await LocalStorage.logout();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Logged out locally')),
         );
@@ -91,6 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       await LocalStorage.logout();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Logged out due to an error')),
       );
@@ -111,6 +117,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             // Custom Header matching Home Screen
             _buildCustomHeader(context),
+
+            // Offline Indicator
+            const OfflineIndicator(margin: EdgeInsets.fromLTRB(24, 0, 24, 8)),
 
             // Main Content
             Expanded(

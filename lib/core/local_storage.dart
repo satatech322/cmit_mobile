@@ -120,6 +120,34 @@ class LocalStorage {
     }
   }
 
+  /// ✅ **Get Current User Name**
+  static Future<String?> getUserName() async {
+    try {
+      final userData = await getUser();
+      if (userData != null) {
+        return (userData['name'] ?? userData['username'] ?? userData['full_name'])?.toString();
+      }
+      return null;
+    } catch (e) {
+      print("❌ LocalStorage: Error getting user name - $e");
+      return null;
+    }
+  }
+
+  /// ✅ **Get Current User ID**
+  static Future<String?> getUserId() async {
+    try {
+      final userData = await getUser();
+      if (userData != null) {
+        return (userData['id'] ?? userData['user_id'] ?? userData['userId'])?.toString();
+      }
+      return null;
+    } catch (e) {
+      print("❌ LocalStorage: Error getting user ID - $e");
+      return null;
+    }
+  }
+
   /// ✅ **Logout: Remove Token and User Data (Ensuring Proper Deletion)**
   static Future<void> logout() async {
     try {

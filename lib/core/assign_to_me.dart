@@ -1,53 +1,74 @@
 import 'package:cmit/core/api_service.dart';
 import 'package:cmit/config/api.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
+import 'package:cmit/features/offline/services/inquiry_cache_service.dart';
+import 'package:cmit/features/offline/services/offline_service.dart';
 
 class AssignToMe {
-  /// ✅ Fetch Inquiries Assigned to User
+  /// ✅ Fetch Inquiries Assigned to User with automatic offline caching and fallback
   static Future<Map<String, dynamic>> getAssignedInquiries() async {
-    try {
-      print("🔹 Fetching assigned inquiries from: ${API.assignToMe}");
-      final response = await ApiService.get(
-        API.assignToMe,
-        withAuth: true,
-      );
+    final hasInternet = await OfflineService.hasInternet();
 
-      print("🔹 API AssignToMe Response: ${response.toString()}");
+    if (hasInternet) {
+      try {
+        print("🔹 Fetching assigned inquiries from: ${API.assignToMe}");
+        final response = await ApiService.get(
+          API.assignToMe,
+          withAuth: true,
+        );
 
-      // ✅ Check success and extract data
-      if (response['success'] == true && response.containsKey('data')) {
-        // Access the nested 'data' field
-        final nestedData = response['data'] as Map<String, dynamic>;
-        if (nestedData['success'] == true && nestedData.containsKey('data')) {
-          final responseData = nestedData['data'] as List<dynamic>;
+        print("🔹 API AssignToMe Response: ${response.toString()}");
 
-          // ✅ Convert list of inquiries to AssignToMeModel
-          final inquiries = responseData
-              .map((json) => AssignToMeModel.fromJson(json as Map<String, dynamic>))
-              .toList();
+        // Check success and extract data
+        if (response['success'] == true && response.containsKey('data')) {
+          final nestedData = response['data'] as Map<String, dynamic>;
+          if (nestedData['success'] == true && nestedData.containsKey('data')) {
+            final responseData = nestedData['data'] as List<dynamic>;
 
-          return {
-            'success': true,
-            'message': "Inquiries fetched successfully",
-            'inquiries': inquiries,
-          };
+            // Convert list of inquiries to AssignToMeModel
+            final inquiries = responseData
+                .map((json) => AssignToMeModel.fromJson(json as Map<String, dynamic>))
+                .toList();
+
+            // Cache inquiries for offline access
+            await InquiryCacheService.cacheInquiries(inquiries);
+
+            return {
+              'success': true,
+              'message': "Inquiries fetched successfully",
+              'inquiries': inquiries,
+              'is_cached': false,
+            };
+          }
         }
+      } catch (e, stackTrace) {
+        print("❌ AssignToMe API error, falling back to cache: $e\nStackTrace: $stackTrace");
+      }
+    }
 
-        // Handle case where nested data is invalid
+    // Fallback to offline cache if no internet or API failed
+    try {
+      final cachedInquiries = await InquiryCacheService.getCachedInquiries();
+      if (cachedInquiries != null && cachedInquiries.isNotEmpty) {
+        print("📦 Loaded ${cachedInquiries.length} inquiries from offline cache");
         return {
-          'success': false,
-          'message': nestedData['message'] ?? "Failed to fetch assigned inquiries."
+          'success': true,
+          'message': "Loaded inquiries from offline cache",
+          'inquiries': cachedInquiries,
+          'is_cached': true,
         };
       }
-
-      // Handle failure case
-      return {
-        'success': false,
-        'message': response['message'] ?? "Failed to fetch assigned inquiries."
-      };
-    } catch (e, stackTrace) {
-      print("❌ AssignToMe: GetAssignedInquiries Error - $e\nStackTrace: $stackTrace");
-      return {'success': false, 'message': "A network error occurred. Please try again."};
+    } catch (e) {
+      print("❌ Failed to read cached inquiries: $e");
     }
+
+    return {
+      'success': false,
+      'message': hasInternet
+          ? "Failed to fetch assigned inquiries."
+          : "You are offline and no cached inquiries were found.",
+      'inquiries': <AssignToMeModel>[],
+      'is_cached': false,
+    };
   }
 }

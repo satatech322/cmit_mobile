@@ -13,7 +13,9 @@ import 'package:cmit/core/assign_to_me.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'dart:async';
 import 'package:cmit/features/offline/services/offline_service.dart';
+import 'package:cmit/features/offline/services/inquiry_cache_service.dart';
 import 'package:cmit/features/offline/view/offline_inquiry_detail_screen.dart';
+import 'package:cmit/features/offline/widgets/offline_indicator.dart';
 import 'package:cmit/core/global_refresh_event.dart';
 import 'package:cmit/services/notification_storage.dart';
 
@@ -126,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await InquiryStatisticsService.getInquiryStatistics();
     
     if (mounted) {
-      if (result['success'] == true) {
+      if (result['success'] == true && result['data'] != null) {
         final InquiryStatisticsModel stats = result['data'];
         setState(() {
           totalInquiries = stats.total;
@@ -135,12 +137,29 @@ class _HomeScreenState extends State<HomeScreen> {
           isLoadingStats = false;
         });
       } else {
-        setState(() {
-          totalInquiries = 0;
-          pendingInquiries = 0;
-          completedInquiries = 0;
-          isLoadingStats = false;
-        });
+        // Compute from cached inquiries if available
+        final cached = await InquiryCacheService.getCachedInquiries();
+        if (cached != null && cached.isNotEmpty) {
+          final total = cached.length;
+          final completed = cached.where((i) {
+            final s = i.status.toString().toLowerCase();
+            return s == '4' || s == 'completed';
+          }).length;
+          final pending = total - completed;
+          setState(() {
+            totalInquiries = total;
+            pendingInquiries = pending;
+            completedInquiries = completed;
+            isLoadingStats = false;
+          });
+        } else {
+          setState(() {
+            totalInquiries = 0;
+            pendingInquiries = 0;
+            completedInquiries = 0;
+            isLoadingStats = false;
+          });
+        }
       }
     }
   }
@@ -162,24 +181,63 @@ class _HomeScreenState extends State<HomeScreen> {
             inquiries = recentInquiries;
             filteredInquiries = List.from(inquiries);
             isLoadingInquiries = false;
+            inquiriesError = '';
+          });
+
+          // If statistics are still 0 but we have inquiries, compute from inquiries
+          if (totalInquiries == 0 && allInquiries.isNotEmpty) {
+            final total = allInquiries.length;
+            final completed = allInquiries.where((i) {
+              final s = i.status.toString().toLowerCase();
+              return s == '4' || s == 'completed';
+            }).length;
+            setState(() {
+              totalInquiries = total;
+              pendingInquiries = total - completed;
+              completedInquiries = completed;
+              isLoadingStats = false;
+            });
+          }
+        } else {
+          // Try direct cached load
+          final cached = await InquiryCacheService.getCachedInquiries();
+          if (cached != null && cached.isNotEmpty) {
+            final recentInquiries = cached.take(4).toList();
+            setState(() {
+              inquiries = recentInquiries;
+              filteredInquiries = List.from(inquiries);
+              isLoadingInquiries = false;
+              inquiriesError = '';
+            });
+          } else {
+            setState(() {
+              inquiries = [];
+              filteredInquiries = [];
+              isLoadingInquiries = false;
+              inquiriesError = result['message']?.toString() ?? 'Failed to load inquiries';
+            });
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        final cached = await InquiryCacheService.getCachedInquiries();
+        if (cached != null && cached.isNotEmpty) {
+          final recentInquiries = cached.take(4).toList();
+          setState(() {
+            inquiries = recentInquiries;
+            filteredInquiries = List.from(inquiries);
+            isLoadingInquiries = false;
+            inquiriesError = '';
           });
         } else {
           setState(() {
             inquiries = [];
             filteredInquiries = [];
             isLoadingInquiries = false;
-            inquiriesError = result['message']?.toString() ?? 'Failed to load inquiries';
+            inquiriesError = 'Unable to load inquiries';
           });
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          inquiries = [];
-          filteredInquiries = [];
-          isLoadingInquiries = false;
-          inquiriesError = 'Unable to load inquiries';
-        });
       }
     }
   }
@@ -237,7 +295,10 @@ class _HomeScreenState extends State<HomeScreen> {
               return Column(
                 children: [
                   // Custom Header (Visible only on Home Tab)
-                  if (_currentIndex == 0) _buildCustomHeader(context),
+                  if (_currentIndex == 0) ...[
+                    _buildCustomHeader(context),
+                    const OfflineIndicator(margin: EdgeInsets.fromLTRB(24, 0, 24, 8)),
+                  ],
                   
                   // Main Content
                   Expanded(

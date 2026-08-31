@@ -13,6 +13,7 @@ class InquiryVisitsSection extends StatefulWidget {
   final Function(Map<String, dynamic>, Map<String, dynamic>, int) onEditFinding;
   final VoidCallback onAddVisit;
   final String? currentUserId;
+  final bool isOffline;
 
   const InquiryVisitsSection({
     super.key,
@@ -22,6 +23,7 @@ class InquiryVisitsSection extends StatefulWidget {
     required this.onEditFinding,
     required this.onAddVisit,
     this.currentUserId,
+    this.isOffline = false,
   });
 
   @override
@@ -62,7 +64,7 @@ class _InquiryVisitsSectionState extends State<InquiryVisitsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final bool canAddVisit = InquiryPermissions.canAddFieldVisit(widget.inquiry);
+    final bool canAddVisit = !widget.isOffline && InquiryPermissions.canAddFieldVisit(widget.inquiry);
 
     // Loading State
     if (widget.currentUserId == null && !widget.inquiry.isChairperson) {

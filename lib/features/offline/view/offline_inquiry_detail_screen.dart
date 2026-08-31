@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:cmit/config/theme.dart';
 import 'package:cmit/features/home/model/assign_to_me_model.dart';
 import 'package:cmit/features/offline/services/offline_service.dart';
-import 'package:cmit/features/offline/view/offline_details_screen.dart';
 import 'package:cmit/features/offline/view/offline_visit_findings_screen.dart';
 import 'package:cmit/core/auth_service.dart';
 
@@ -107,16 +106,19 @@ class _OfflineInquiryDetailsScreenState extends State<OfflineInquiryDetailsScree
              if (!_isOnline)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 color: const Color(0xFF014323),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.cloud_off, size: 14, color: Colors.white),
-                    const SizedBox(width: 8),
-                    const Text(
-                      "Offline Mode - Read Only", 
-                      style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)
+                  children: const [
+                    Icon(Icons.cloud_off, size: 14, color: Colors.white),
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        "Offline Mode - You can add findings in offline mode", 
+                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ),
@@ -148,6 +150,7 @@ class _OfflineInquiryDetailsScreenState extends State<OfflineInquiryDetailsScree
                       onEditFinding: _onEditFinding,
                       onAddVisit: _onAddVisit,
                       currentUserId: _currentUserId ?? "", 
+                      isOffline: true,
                     ),
                   ),
                   
@@ -327,64 +330,6 @@ class _OfflineInquiryDetailsScreenState extends State<OfflineInquiryDetailsScree
         ],
       ),
       child: child,
-    );
-  }
-  
-  Widget _buildSmallSectionCard({
-      required String title, 
-      required int count, 
-      required IconData icon, 
-      required VoidCallback onTap,
-    }) {
-    return InkWell(
-      onTap: onTap,
-       borderRadius: BorderRadius.circular(20),
-      child: Container(
-        height: 140, 
-        decoration: BoxDecoration(
-          color: const Color(0xFF014323).withOpacity(0.04),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF014323).withOpacity(0.1)),
-        ),
-        child: Stack(
-          children: [
-            // Watermark Icon covering the box
-            Positioned(
-              right: -20,
-              bottom: -20,
-              child: Icon(
-                icon,
-                size: 100,
-                color: const Color(0xFF014323).withOpacity(0.15),
-              ),
-            ),
-            
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: SizedBox(
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Spacer(),
-                    Text(
-                      "$count",
-                       style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
-                    ),
-                    Text(
-                      title,
-                      style: TextStyle(fontSize: 14, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
